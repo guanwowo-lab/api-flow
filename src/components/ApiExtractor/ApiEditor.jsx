@@ -676,8 +676,6 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, 
     description: '字段描述', remark: '备注', skip: '— 跳过 —',
   }
   const colCount = headers ? headers.length : Math.max(...rows.map((r) => r.cells.length))
-  const previewRows = rows.slice(0, 15)
-
   return (
     <div>
       {/* 列映射 */}
@@ -699,25 +697,25 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, 
 
       {/* 层级提示 */}
       <div className="mb-2 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-        💡 <strong>层级</strong>：◀ ▶ 调整每行的嵌套层级。子参数（层级1+）会自动归入上方最近的父参数下。
+        💡 <strong>层级</strong>：◀ ▶ 调整每行的嵌套层级（共 {rows.length} 行，可滚动查看全部）。
+        子参数会自动归入上方最近的父参数下。
       </div>
 
-      {/* 预览表格 */}
-      <div className="overflow-x-auto mb-3 max-h-[50vh] overflow-y-auto">
+      {/* 预览表格 — 显示全部行，固定表头可滚动 */}
+      <div className="overflow-auto mb-3 border border-gray-300 rounded" style={{ maxHeight: '45vh' }}>
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-purple-100 sticky top-0">
+            <tr className="bg-purple-100 sticky top-0 z-10">
               <th className="border border-purple-200 px-2 py-1 text-gray-500 text-[10px] w-12">层级</th>
               {Object.keys(mapping).map((c) => (
                 <th key={c} className={`border border-purple-200 px-2 py-1 text-left ${mapping[c] === 'skip' ? 'text-gray-300' : 'text-purple-700'}`}>
                   {fieldLabels[mapping[c]] || `列${parseInt(c) + 1}`}
                 </th>
               ))}
-              <th className="border border-purple-200 px-1 py-1 w-14"></th>
             </tr>
           </thead>
           <tbody>
-            {previewRows.map((row, ri) => (
+            {rows.map((row, ri) => (
               <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border border-gray-200 px-1 py-0.5 text-center">
                   <div className="flex items-center justify-center gap-0.5">
@@ -753,16 +751,10 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, 
                     </span>
                   </td>
                 ))}
-                <td className="border border-gray-200 px-1 py-0.5 text-[10px] text-gray-300">
-                  {ri + 1}
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {rows.length > 15 && (
-          <p className="text-[10px] text-gray-400 mt-1 text-center">... 还有 {rows.length - 15} 行</p>
-        )}
       </div>
       <div className="flex gap-2">
         <button type="button" onClick={onConfirm} className="px-4 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700">
