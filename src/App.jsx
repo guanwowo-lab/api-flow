@@ -3,6 +3,7 @@ import ProjectList from './components/ProjectManager/ProjectList'
 import ProjectCreate from './components/ProjectManager/ProjectCreate'
 import DocumentUploader from './components/DocumentUploader/DocumentUploader'
 import ExtractionResult from './components/ApiExtractor/ExtractionResult'
+import MatchPanel from './components/ApiMatcher/MatchPanel'
 
 export default function App() {
   const { state } = useProject()
@@ -14,6 +15,9 @@ export default function App() {
   )
   if (state.activeView === 'extract') return (
     <div className="min-h-screen bg-gray-100"><ExtractionResult /></div>
+  )
+  if (state.activeView === 'match') return (
+    <div className="min-h-screen bg-gray-100"><MatchPanel /></div>
   )
 
   return (
