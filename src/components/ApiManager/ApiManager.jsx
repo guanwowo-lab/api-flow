@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
-
 export default function ApiManager() {
-  const { state, saveExtract, dispatch } = useProject()
+  const { state, saveExtract, loadApiFolders, dispatch } = useProject()
   const apis = state.extractA?.apis || []
-  const [editingId, setEditingId] = useState(null)
+  const folders = state.apiFolders || []
+  const [showImport, setShowImport] = useState(false)
+
+  useEffect(() => {
+    loadApiFolders()
+  }, [loadApiFolders])
 
   const updateApi = (idx, updated) => {
     const newApis = apis.map((a, i) => (i === idx ? updated : a))
@@ -17,20 +20,17 @@ export default function ApiManager() {
   const deleteApi = (idx) => {
     const newApis = apis.filter((_, i) => i !== idx)
     saveExtract(state.project.id, 'A', newApis)
-    if (editingId === idx) setEditingId(null)
   }
 
   const addApi = () => {
-    const newApi = {
-      name: '',
-      url: '',
-      method: 'POST',
-      inputParams: [],
-      outputParams: [],
-    }
-    const newApis = [...apis, newApi]
-    saveExtract(state.project.id, 'A', newApis)
-    setEditingId(newApis.length - 1)
+    const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
+    saveExtract(state.project.id, 'A', [...apis, newApi])
+  }
+
+  const importFromFolder = (folder) => {
+    const folderApis = (folder.apis || []).map((a) => ({ ...a }))
+    saveExtract(state.project.id, 'A', [...apis, ...folderApis])
+    setShowImport(false)
   }
 
   const handleContinue = () => {
@@ -51,7 +51,7 @@ export default function ApiManager() {
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
-        在这里手动维护<strong>我方系统</strong>的 API 接口信息。后续匹配客户文档时，将以这里的接口为准。
+        在这里维护本项目的<strong>我方系统</strong> API 接口。可以手动添加，也可以从右侧"我方 API 库"导入预置的接口文件夹。
       </div>
 
       <div className="flex gap-3 mb-6">
@@ -59,18 +59,48 @@ export default function ApiManager() {
           + 添加接口
         </button>
         <button
+          onClick={() => setShowImport(!showImport)}
+          className={`px-4 py-2 rounded-lg text-sm border ${showImport ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+        >
+          📂 从 API 库导入
+        </button>
+        <button
           onClick={handleContinue}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm ml-auto"
         >
           上传客户文档 &rarr;
         </button>
       </div>
 
+      {showImport && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <h3 className="text-sm font-medium mb-3">选择要导入的文件夹：</h3>
+          {folders.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              暂无预置接口，请先到<a className="text-blue-600 underline cursor-pointer"
+                onClick={() => dispatch({ type: 'SET_VIEW', payload: 'apiLibrary' })}>API 库</a>创建文件夹和接口。
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {folders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => importFromFolder(f)}
+                  className="text-left px-3 py-2 rounded border border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-sm"
+                >
+                  📁 {f.name}
+                  <span className="text-xs text-gray-400 ml-1">({(f.apis || []).length} 个接口)</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {apis.length === 0 ? (
         <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
           <p className="text-lg mb-2">暂无接口</p>
-          <p>点击"+ 添加接口"手动录入我方系统的 API</p>
-          <p className="text-xs mt-2">或者点击"上传客户文档"先处理客户侧</p>
+          <p>点击"+ 添加接口"手动录入，或"从 API 库导入"已有接口</p>
         </div>
       ) : (
         <div className="space-y-1">

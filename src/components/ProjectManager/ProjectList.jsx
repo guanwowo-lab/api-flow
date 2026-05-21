@@ -19,7 +19,10 @@ export default function ProjectList() {
   return (
     <div className="max-w-2xl mx-auto mt-20 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">API Flow</h1>
+        <div className="flex items-center gap-3">
+          <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'home' })} className="text-gray-400 hover:text-gray-600">&larr;</button>
+          <h1 className="text-2xl font-bold">项目管理</h1>
+        </div>
         <button
           onClick={handleNew}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

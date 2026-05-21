@@ -6,12 +6,14 @@ const ProjectContext = createContext(null)
 const initialState = {
   project: null,           // { id, name, createdAt, updatedAt }
   projectList: [],         // [{ id, name, createdAt, updatedAt }]
+  myApis: [],              // [{ id, name, method, url, inputParams, outputParams }]
+  apiFolders: [],           // [{ id, name, apis: [], createdAt, updatedAt }]
   extractA: null,          // { id, projectId, side: 'A', apis: [] }
   extractB: null,          // { id, projectId, side: 'B', apis: [] }
   matches: null,           // { id, projectId, pairs: [] }
   sequenceDiagram: null,   // { id, projectId, type: 'sequence', data: { nodes, edges } }
   mappingDiagram: null,    // { id, projectId, type: 'mapping', data: { nodes, edges } }
-  activeView: 'projects',  // 'projects' | 'upload' | 'extract' | 'match' | 'sequence' | 'mapping'
+  activeView: 'home',      // 'home' | 'projects' | 'myApis' | 'create' | 'manage' | 'upload' | ...
 }
 
 function reducer(state, action) {
@@ -30,6 +32,8 @@ function reducer(state, action) {
       return action.payload.type === 'sequence'
         ? { ...state, sequenceDiagram: action.payload }
         : { ...state, mappingDiagram: action.payload }
+    case 'SET_API_FOLDERS':
+      return { ...state, apiFolders: action.payload }
     case 'SET_VIEW':
       return { ...state, activeView: action.payload }
     case 'RESET':
@@ -117,11 +121,40 @@ export function ProjectProvider({ children }) {
     await db.projects.update(projectId, { updatedAt: new Date().toISOString() })
   }, [])
 
+  const loadApiFolders = useCallback(async () => {
+    const list = await db.apiFolders.orderBy('updatedAt').reverse().toArray()
+    dispatch({ type: 'SET_API_FOLDERS', payload: list })
+  }, [])
+
+  const saveApiFolder = useCallback(async (folder) => {
+    const now = new Date().toISOString()
+    const data = {
+      name: folder.name,
+      apis: folder.apis || [],
+      createdAt: folder.createdAt || now,
+      updatedAt: now,
+    }
+    if (folder.id) {
+      await db.apiFolders.update(folder.id, data)
+      data.id = folder.id
+    } else {
+      data.id = await db.apiFolders.add(data)
+    }
+    await loadApiFolders()
+    return data
+  }, [loadApiFolders])
+
+  const deleteApiFolder = useCallback(async (id) => {
+    await db.apiFolders.delete(id)
+    await loadApiFolders()
+  }, [loadApiFolders])
+
   return (
     <ProjectContext.Provider value={{
       state, dispatch,
       loadProjects, createProject, openProject,
       saveExtract, saveMatches, saveDiagram,
+      loadApiFolders, saveApiFolder, deleteApiFolder,
     }}>
       {children}
     </ProjectContext.Provider>
