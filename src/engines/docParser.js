@@ -1,10 +1,8 @@
 import mammoth from 'mammoth'
 import * as pdfjsLib from 'pdfjs-dist'
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url
-).toString()
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
 /**
  * 根据文件类型或 URL 提取文本内容
@@ -42,11 +40,44 @@ async function parsePdf(file) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i)
     const content = await page.getTextContent()
-    const text = content.items.map((item) => item.str).join(' ')
+    const text = extractTextWithLayout(content.items)
     pages.push(text)
   }
 
   return { text: pages.join('\n'), sourceName: file.name }
+}
+
+function extractTextWithLayout(items) {
+  if (!items || items.length === 0) return ''
+
+  const sorted = [...items].sort((a, b) => {
+    const yDiff = b.transform[5] - a.transform[5]
+    if (Math.abs(yDiff) > 2) return yDiff
+    return a.transform[4] - b.transform[4]
+  })
+
+  let result = ''
+  let lastY = sorted[0]?.transform[5]
+  let lastX = sorted[0]?.transform[4]
+
+  for (const item of sorted) {
+    const y = item.transform[5]
+    const x = item.transform[4]
+
+    if (lastY !== undefined && Math.abs(y - lastY) > 2) {
+      result += '\n'
+    } else if (lastX !== undefined && lastY !== undefined && x < lastX) {
+      // same line but left of previous — likely a new line too
+    } else if (lastX !== undefined && x - lastX > 5) {
+      result += ' '
+    }
+
+    result += item.str
+    lastY = y
+    lastX = x + (item.width || 0)
+  }
+
+  return result
 }
 
 async function parseUrl(url) {
