@@ -6,12 +6,16 @@ import ExtractionResult from './components/ApiExtractor/ExtractionResult'
 import MatchPanel from './components/ApiMatcher/MatchPanel'
 import SequenceEditor from './components/FlowEditor/SequenceEditor'
 import MappingEditor from './components/FlowEditor/MappingEditor'
+import ApiManager from './components/ApiManager/ApiManager'
 
 export default function App() {
   const { state } = useProject()
 
   if (state.activeView === 'projects') return <ProjectList />
   if (state.activeView === 'create') return <ProjectCreate />
+  if (state.activeView === 'manage') return (
+    <div className="min-h-screen bg-gray-100"><ApiManager /></div>
+  )
   if (state.activeView === 'upload') return (
     <div className="min-h-screen bg-gray-100"><DocumentUploader /></div>
   )

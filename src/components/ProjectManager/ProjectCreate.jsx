@@ -9,7 +9,7 @@ export default function ProjectCreate() {
     e.preventDefault()
     if (!name.trim()) return
     await createProject(name.trim())
-    dispatch({ type: 'SET_VIEW', payload: 'upload' })
+    dispatch({ type: 'SET_VIEW', payload: 'manage' })
   }
 
   return (
