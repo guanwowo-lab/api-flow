@@ -4,6 +4,7 @@ import ProjectCreate from './components/ProjectManager/ProjectCreate'
 import DocumentUploader from './components/DocumentUploader/DocumentUploader'
 import ExtractionResult from './components/ApiExtractor/ExtractionResult'
 import MatchPanel from './components/ApiMatcher/MatchPanel'
+import SequenceEditor from './components/FlowEditor/SequenceEditor'
 
 export default function App() {
   const { state } = useProject()
@@ -19,6 +20,7 @@ export default function App() {
   if (state.activeView === 'match') return (
     <div className="min-h-screen bg-gray-100"><MatchPanel /></div>
   )
+  if (state.activeView === 'sequence') return <SequenceEditor />
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
