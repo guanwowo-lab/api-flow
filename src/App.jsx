@@ -1,12 +1,16 @@
 import { useProject } from './store/ProjectContext'
 import ProjectList from './components/ProjectManager/ProjectList'
 import ProjectCreate from './components/ProjectManager/ProjectCreate'
+import DocumentUploader from './components/DocumentUploader/DocumentUploader'
 
 export default function App() {
   const { state } = useProject()
 
   if (state.activeView === 'projects') return <ProjectList />
   if (state.activeView === 'create') return <ProjectCreate />
+  if (state.activeView === 'upload') return (
+    <div className="min-h-screen bg-gray-100"><DocumentUploader /></div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
