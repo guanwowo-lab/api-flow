@@ -5,6 +5,7 @@ import DocumentUploader from './components/DocumentUploader/DocumentUploader'
 import ExtractionResult from './components/ApiExtractor/ExtractionResult'
 import MatchPanel from './components/ApiMatcher/MatchPanel'
 import SequenceEditor from './components/FlowEditor/SequenceEditor'
+import MappingEditor from './components/FlowEditor/MappingEditor'
 
 export default function App() {
   const { state } = useProject()
@@ -21,6 +22,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-100"><MatchPanel /></div>
   )
   if (state.activeView === 'sequence') return <SequenceEditor />
+  if (state.activeView === 'mapping') return <MappingEditor />
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900">
