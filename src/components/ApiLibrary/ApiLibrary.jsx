@@ -7,10 +7,21 @@ export default function ApiLibrary() {
   const folders = state.apiFolders || []
   const [selectedId, setSelectedId] = useState(null)
   const [newName, setNewName] = useState('')
+  const [draftApis, setDraftApis] = useState([])
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     loadApiFolders()
   }, [loadApiFolders])
+
+  // 切换文件夹时加载对应 APIs 到本地状态
+  useEffect(() => {
+    const folder = folders.find((f) => f.id === selectedId)
+    if (folder) {
+      setDraftApis((folder.apis || []).map((a) => ({ ...a })))
+      setDirty(false)
+    }
+  }, [selectedId, folders])
 
   const selected = folders.find((f) => f.id === selectedId)
 
@@ -27,25 +38,26 @@ export default function ApiLibrary() {
     if (selectedId === id) setSelectedId(null)
   }
 
-  const updateFolderApis = (apis) => {
-    if (!selected) return
-    saveApiFolder({ ...selected, apis })
-  }
-
-  const addApi = () => {
-    if (!selected) return
-    const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
-    updateFolderApis([...(selected.apis || []), newApi])
-  }
-
   const updateApi = (idx, updated) => {
-    const newApis = (selected.apis || []).map((a, i) => (i === idx ? updated : a))
-    updateFolderApis(newApis)
+    setDraftApis((prev) => prev.map((a, i) => (i === idx ? updated : a)))
+    setDirty(true)
   }
 
   const deleteApi = (idx) => {
-    const newApis = (selected.apis || []).filter((_, i) => i !== idx)
-    updateFolderApis(newApis)
+    setDraftApis((prev) => prev.filter((_, i) => i !== idx))
+    setDirty(true)
+  }
+
+  const addApi = () => {
+    const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
+    setDraftApis((prev) => [...prev, newApi])
+    setDirty(true)
+  }
+
+  const handleSaveFolder = async () => {
+    if (!selected) return
+    await saveApiFolder({ ...selected, apis: draftApis })
+    setDirty(false)
   }
 
   return (
@@ -61,7 +73,6 @@ export default function ApiLibrary() {
       </div>
 
       <div className="flex gap-6">
-        {/* 左侧：文件夹列表 */}
         <div className="w-64 shrink-0">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h2 className="text-sm font-medium text-gray-500 mb-3">接口文件夹</h2>
@@ -111,7 +122,6 @@ export default function ApiLibrary() {
           </div>
         </div>
 
-        {/* 右侧：接口列表 */}
         <div className="flex-1">
           {!selected ? (
             <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
@@ -121,23 +131,32 @@ export default function ApiLibrary() {
             <>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-medium">{selected.name} — 接口列表</h2>
-                <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                  + 添加接口
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                    + 添加接口
+                  </button>
+                  <button
+                    onClick={handleSaveFolder}
+                    disabled={!dirty}
+                    className={`px-3 py-1.5 rounded text-sm ${dirty ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
+                  >
+                    {dirty ? '● 保存文件夹' : '已保存 ✓'}
+                  </button>
+                </div>
               </div>
 
-              {(selected.apis || []).length === 0 ? (
+              {draftApis.length === 0 ? (
                 <div className="text-center py-16 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
                   <p>该文件夹下暂无接口</p>
                   <p className="text-xs mt-1">点击"+ 添加接口"开始录入</p>
                 </div>
               ) : (
                 <div className="space-y-1 max-h-[65vh] overflow-y-auto">
-                  {(selected.apis || []).map((api, i) => (
+                  {draftApis.map((api, i) => (
                     <ApiEditor
                       key={i}
                       api={api}
-                      onChange={(updated) => updateApi(i, updated)}
+                      onSave={(updated) => updateApi(i, updated)}
                       onDelete={() => deleteApi(i)}
                     />
                   ))}

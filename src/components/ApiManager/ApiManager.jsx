@@ -4,36 +4,53 @@ import ApiEditor from '../ApiExtractor/ApiEditor'
 
 export default function ApiManager() {
   const { state, saveExtract, loadApiFolders, dispatch } = useProject()
-  const apis = state.extractA?.apis || []
   const folders = state.apiFolders || []
+  const [draftApis, setDraftApis] = useState([])
+  const [initialized, setInitialized] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     loadApiFolders()
   }, [loadApiFolders])
 
+  useEffect(() => {
+    if (!initialized && state.extractA) {
+      setDraftApis((state.extractA.apis || []).map((a) => ({ ...a })))
+      setInitialized(true)
+    }
+  }, [state.extractA, initialized])
+
   const updateApi = (idx, updated) => {
-    const newApis = apis.map((a, i) => (i === idx ? updated : a))
-    saveExtract(state.project.id, 'A', newApis)
+    setDraftApis((prev) => prev.map((a, i) => (i === idx ? updated : a)))
+    setDirty(true)
   }
 
   const deleteApi = (idx) => {
-    const newApis = apis.filter((_, i) => i !== idx)
-    saveExtract(state.project.id, 'A', newApis)
+    setDraftApis((prev) => prev.filter((_, i) => i !== idx))
+    setDirty(true)
   }
 
   const addApi = () => {
     const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
-    saveExtract(state.project.id, 'A', [...apis, newApi])
+    setDraftApis((prev) => [...prev, newApi])
+    setDirty(true)
   }
 
   const importFromFolder = (folder) => {
     const folderApis = (folder.apis || []).map((a) => ({ ...a }))
-    saveExtract(state.project.id, 'A', [...apis, ...folderApis])
+    setDraftApis((prev) => [...prev, ...folderApis])
+    setDirty(true)
     setShowImport(false)
   }
 
-  const handleContinue = () => {
+  const handleSaveAll = async () => {
+    await saveExtract(state.project.id, 'A', draftApis)
+    setDirty(false)
+  }
+
+  const handleContinue = async () => {
+    if (dirty) await saveExtract(state.project.id, 'A', draftApis)
     dispatch({ type: 'SET_VIEW', payload: 'upload' })
   }
 
@@ -47,14 +64,14 @@ export default function ApiManager() {
           &larr; 项目列表
         </button>
         <h1 className="text-xl font-bold">我方 API 管理 — {state.project?.name}</h1>
-        <span className="text-sm text-gray-400 ml-auto">{apis.length} 个接口</span>
+        <span className="text-sm text-gray-400 ml-auto">{draftApis.length} 个接口</span>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-800">
-        在这里维护本项目的<strong>我方系统</strong> API 接口。可以手动添加，也可以从右侧"我方 API 库"导入预置的接口文件夹。
+        在这里维护本项目的<strong>我方系统</strong> API 接口。编辑接口后需点击接口上的<strong>"保存"</strong>按钮，再点击下方<strong>"全部保存到数据库"</strong>完成持久化。
       </div>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-3 mb-6 flex-wrap">
         <button onClick={addApi} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
           + 添加接口
         </button>
@@ -65,8 +82,15 @@ export default function ApiManager() {
           📂 从 API 库导入
         </button>
         <button
+          onClick={handleSaveAll}
+          disabled={!dirty}
+          className={`px-4 py-2 rounded-lg text-sm ml-auto ${dirty ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
+        >
+          {dirty ? '● 全部保存到数据库' : '已全部保存 ✓'}
+        </button>
+        <button
           onClick={handleContinue}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm ml-auto"
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
         >
           上传客户文档 &rarr;
         </button>
@@ -77,8 +101,8 @@ export default function ApiManager() {
           <h3 className="text-sm font-medium mb-3">选择要导入的文件夹：</h3>
           {folders.length === 0 ? (
             <p className="text-sm text-gray-400">
-              暂无预置接口，请先到<a className="text-blue-600 underline cursor-pointer"
-                onClick={() => dispatch({ type: 'SET_VIEW', payload: 'apiLibrary' })}>API 库</a>创建文件夹和接口。
+              暂无预置接口，请先到 <a className="text-blue-600 underline cursor-pointer"
+                onClick={() => dispatch({ type: 'SET_VIEW', payload: 'apiLibrary' })}>API 库</a> 创建文件夹和接口。
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
@@ -97,25 +121,25 @@ export default function ApiManager() {
         </div>
       )}
 
-      {apis.length === 0 ? (
+      {draftApis.length === 0 ? (
         <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
           <p className="text-lg mb-2">暂无接口</p>
           <p>点击"+ 添加接口"手动录入，或"从 API 库导入"已有接口</p>
         </div>
       ) : (
         <div className="space-y-1">
-          {apis.map((api, i) => (
+          {draftApis.map((api, i) => (
             <ApiEditor
               key={i}
               api={api}
-              onChange={(updated) => updateApi(i, updated)}
+              onSave={(updated) => updateApi(i, updated)}
               onDelete={() => deleteApi(i)}
             />
           ))}
         </div>
       )}
 
-      {apis.length > 0 && (
+      {draftApis.length > 0 && (
         <button
           onClick={handleContinue}
           className="w-full mt-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-lg"
