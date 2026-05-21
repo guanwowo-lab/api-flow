@@ -111,16 +111,18 @@ export default function ApiEditor({ api, onSave, onDelete }) {
 
     // 检测缩进（用于嵌套）
     const indentLevels = lines.map((l) => l.match(/^(\s*)/)[1].length)
+    const nonZero = indentLevels.filter((n) => n > 0)
+    const unit = nonZero.length > 0 ? Math.min(...nonZero) : 2
     const minIndent = Math.min(...indentLevels)
     const normalized = lines.map((l, i) => ({
       text: l.trim(),
-      level: minIndent > 0 ? Math.round((indentLevels[i] - minIndent) / 2) : 0,
+      level: minIndent > 0 ? Math.max(0, Math.round((indentLevels[i] - minIndent) / Math.max(unit, 1))) : 0,
     }))
 
     const delimiter = detectDelimiter(normalized.map((n) => n.text))
     const rows = normalized.map((n) => ({
       cells: splitRow(n.text, delimiter),
-      level: n.level,
+      level: Math.min(n.level, 5), // cap at depth 5
     }))
 
     const maxCols = Math.max(...rows.map((r) => r.cells.length))
@@ -151,6 +153,14 @@ export default function ApiEditor({ api, onSave, onDelete }) {
       rows: dataRows,
       mapping,
     })
+  }
+
+  const adjustLevel = (rowIdx, delta) => {
+    if (!scanResult) return
+    const newRows = scanResult.rows.map((r, i) =>
+      i === rowIdx ? { ...r, level: Math.max(0, Math.min(5, r.level + delta)) } : r
+    )
+    setScanResult({ ...scanResult, rows: newRows })
   }
 
   const confirmImport = () => {
@@ -259,6 +269,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             pasteText={scannerOpen === ipPath ? pasteText : ''}
             onDoScan={doScan}
             onChangeMapping={changeMapping}
+            onAdjustLevel={adjustLevel}
             onConfirmImport={confirmImport}
             onCancelScan={() => { setScanResult(null); setPasteText(''); }}
           />
@@ -282,6 +293,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             pasteText={scannerOpen === opPath ? pasteText : ''}
             onDoScan={doScan}
             onChangeMapping={changeMapping}
+            onAdjustLevel={adjustLevel}
             onConfirmImport={confirmImport}
             onCancelScan={() => { setScanResult(null); setPasteText(''); }}
           />
@@ -297,7 +309,7 @@ function ParamGroup({
   path, title, hasRequired, params, depth,
   expandedPaths, onTogglePath, onParamChange, onAddParam, onRemoveParam,
   isScanning, scanResult, onOpenScanner, onCloseScanner, onPasteText, pasteText,
-  onDoScan, onChangeMapping, onConfirmImport, onCancelScan,
+  onDoScan, onChangeMapping, onAdjustLevel, onConfirmImport, onCancelScan,
 }) {
   const indent = depth * 16
   const borderColor = depth === 0 ? 'border-blue-200' : depth === 1 ? 'border-green-200' : 'border-orange-200'
@@ -345,6 +357,7 @@ function ParamGroup({
               scanResult={scanResult}
               hasRequired={hasRequired}
               onChangeMapping={onChangeMapping}
+              onAdjustLevel={onAdjustLevel}
               onConfirm={onConfirmImport}
               onCancel={onCancelScan}
             />
@@ -400,6 +413,7 @@ function ParamGroup({
                 pasteText=""
                 onDoScan={onDoScan}
                 onChangeMapping={onChangeMapping}
+                onAdjustLevel={onAdjustLevel}
                 onConfirmImport={onConfirmImport}
                 onCancelScan={onCancelScan}
               />
@@ -652,7 +666,7 @@ function scoreRemark(values) {
 
 // ---- 扫描预览组件 ----
 
-function ScanPreview({ scanResult, hasRequired, onChangeMapping, onConfirm, onCancel }) {
+function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, onConfirm, onCancel }) {
   const { headers, rows, mapping } = scanResult
   const fields = hasRequired
     ? ['name', 'type', 'required', 'description', 'remark']
@@ -662,17 +676,17 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onConfirm, onCa
     description: '字段描述', remark: '备注', skip: '— 跳过 —',
   }
   const colCount = headers ? headers.length : Math.max(...rows.map((r) => r.cells.length))
-  const previewRows = rows.slice(0, 10)
+  const previewRows = rows.slice(0, 15)
 
   return (
     <div>
+      {/* 列映射 */}
       <div className="mb-3">
-        <span className="text-xs font-medium text-gray-600 mb-1 block">列映射：为每列选择对应的字段</span>
+        <span className="text-xs font-medium text-gray-600 mb-1 block">列映射：选择每列对应的字段</span>
         <div className="flex gap-2 flex-wrap">
           {Array.from({ length: colCount }, (_, c) => (
             <div key={c} className="flex items-center gap-1 bg-white rounded border border-gray-300 px-2 py-1">
               <span className="text-[10px] text-gray-400">列{c + 1}</span>
-              <span className="text-[10px] text-gray-300">|</span>
               <select value={mapping[c] || 'skip'} onChange={(e) => onChangeMapping(c, e.target.value)}
                 className="text-xs border-none outline-none bg-transparent">
                 {fields.map((f) => (<option key={f} value={f}>{fieldLabels[f]}</option>))}
@@ -682,37 +696,72 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onConfirm, onCa
           ))}
         </div>
       </div>
-      <div className="overflow-x-auto mb-3">
+
+      {/* 层级提示 */}
+      <div className="mb-2 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+        💡 <strong>层级</strong>：◀ ▶ 调整每行的嵌套层级。子参数（层级1+）会自动归入上方最近的父参数下。
+      </div>
+
+      {/* 预览表格 */}
+      <div className="overflow-x-auto mb-3 max-h-[50vh] overflow-y-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
-            <tr className="bg-purple-100">
-              <th className="border border-purple-200 px-2 py-1 w-6 text-gray-400">#</th>
+            <tr className="bg-purple-100 sticky top-0">
+              <th className="border border-purple-200 px-2 py-1 text-gray-500 text-[10px] w-12">层级</th>
               {Object.keys(mapping).map((c) => (
                 <th key={c} className={`border border-purple-200 px-2 py-1 text-left ${mapping[c] === 'skip' ? 'text-gray-300' : 'text-purple-700'}`}>
                   {fieldLabels[mapping[c]] || `列${parseInt(c) + 1}`}
-                  {headers && <div className="text-[10px] text-gray-400 font-normal">({headers[parseInt(c)] || ''})</div>}
                 </th>
               ))}
+              <th className="border border-purple-200 px-1 py-1 w-14"></th>
             </tr>
           </thead>
           <tbody>
             {previewRows.map((row, ri) => (
               <tr key={ri} className={ri % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-200 px-1 py-0.5 text-gray-300 text-center text-[10px]">
-                  {row.level > 0 && <span className="text-purple-400">{'  '.repeat(row.level)}↳</span>}
+                <td className="border border-gray-200 px-1 py-0.5 text-center">
+                  <div className="flex items-center justify-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => onAdjustLevel(ri, -1)}
+                      disabled={row.level === 0}
+                      className={`text-[10px] rounded px-0.5 ${row.level === 0 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-200'}`}
+                      title="减少层级"
+                    >◀</button>
+                    <span className={`text-[10px] font-mono min-w-[12px] ${row.level > 0 ? 'text-purple-600 font-bold' : 'text-gray-300'}`}>
+                      {row.level}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onAdjustLevel(ri, 1)}
+                      disabled={row.level >= 5}
+                      className={`text-[10px] rounded px-0.5 ${row.level >= 5 ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-200'}`}
+                      title="增加层级"
+                    >▶</button>
+                  </div>
                 </td>
                 {Object.keys(mapping).map((c) => (
-                  <td key={c} className={`border border-gray-200 px-2 py-0.5 ${mapping[c] === 'skip' ? 'text-gray-300' : ''}`}
-                    style={{ paddingLeft: row.level > 0 ? 8 + row.level * 12 : 4 }}>
-                    {row.cells[parseInt(c)] || ''}
+                  <td key={c}
+                    className={`border border-gray-200 px-2 py-1 ${mapping[c] === 'skip' ? 'text-gray-300 italic' : ''}`}
+                    style={{ paddingLeft: row.level > 0 ? 8 + row.level * 14 : 6 }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {mapping[c] !== 'skip' && c === Object.keys(mapping)[0] && row.level > 0 && (
+                        <span className="text-purple-300 shrink-0">{'└ '.repeat(row.level)}</span>
+                      )}
+                      {row.cells[parseInt(c)] || <span className="text-gray-300">—</span>}
+                    </span>
                   </td>
                 ))}
+                <td className="border border-gray-200 px-1 py-0.5 text-[10px] text-gray-300">
+                  {ri + 1}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {rows.length > 10 && (
-          <p className="text-[10px] text-gray-400 mt-1">... 还有 {rows.length - 10} 行</p>
+        {rows.length > 15 && (
+          <p className="text-[10px] text-gray-400 mt-1 text-center">... 还有 {rows.length - 15} 行</p>
         )}
       </div>
       <div className="flex gap-2">
