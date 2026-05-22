@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
+import db from '../../store/db'
 
 export default function ApiLibrary() {
   const { state, loadApiFolders, saveApiFolder, deleteApiFolder, dispatch } = useProject()
@@ -11,8 +12,16 @@ export default function ApiLibrary() {
   const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    loadApiFolders()
-  }, [loadApiFolders])
+    // 自动清理垃圾数据文件夹 + 加载
+    db.apiFolders.toArray().then((all) => {
+      const junk = all.filter((f) => f.name.startsWith('垃圾数据'))
+      if (junk.length > 0) {
+        Promise.all(junk.map((f) => db.apiFolders.delete(f.id))).then(() => loadApiFolders())
+      } else {
+        loadApiFolders()
+      }
+    })
+  }, [])
 
   // 切换文件夹时加载对应 APIs 到本地状态
   useEffect(() => {
