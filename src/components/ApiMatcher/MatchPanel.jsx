@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
 
 export default function MatchPanel() {
@@ -397,13 +397,32 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
 
 function RemarkInput({ value, onBlur }) {
   const [local, setLocal] = useState(value)
-  useEffect(() => { setLocal(value) }, [value])
+  const initialRef = useRef(value)
+
+  // 只在外部 value 真的变了（且不是我们自己 blur 导致的）时才同步
+  const savedRef = useRef(value)
+  useEffect(() => {
+    if (value !== savedRef.current) {
+      setLocal(value)
+      initialRef.current = value
+      savedRef.current = value
+    }
+  }, [value])
+
+  const handleBlur = () => {
+    if (local !== initialRef.current) {
+      onBlur(local)
+      savedRef.current = local
+      initialRef.current = local
+    }
+  }
+
   return (
     <input
       type="text"
       value={local}
       onChange={(e) => setLocal(e.target.value)}
-      onBlur={() => { if (local !== value) onBlur(local) }}
+      onBlur={handleBlur}
       onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
       className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
       placeholder="备注"
