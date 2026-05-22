@@ -26,12 +26,16 @@ export default function MatchPanel() {
     }))
   })
 
-  const toggleConfirm = (idx) => {
+  const toggleConfirm = async (idx) => {
     const updated = pairs.map((p, i) =>
       i === idx ? { ...p, confirmed: !p.confirmed } : p
     )
     setPairs(updated)
+    await saveMatches(state.project.id, updated)
   }
+
+  const matchedCount = pairs.filter((p) => p.confirmed).length
+  const totalClientApis = apisB.length
 
   const addPair = () => {
     setPairs([...pairs, { apiAIndex: -1, apiBIndex: -1, score: 0, confirmed: false, paramMappings: [] }])
@@ -78,7 +82,8 @@ export default function MatchPanel() {
           🔄 重新解析客户文档
         </button>
         <span className="text-sm text-gray-400">
-          推荐 {recommendations.length} 对匹配 | 已确认 {pairs.filter((p) => p.confirmed).length}
+          客户 API <strong className="text-gray-600">{matchedCount}</strong>/{totalClientApis} 已匹配
+          {recommendations.length > 0 && ` | ${recommendations.length} 对推荐`}
         </span>
       </div>
 
