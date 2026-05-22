@@ -115,26 +115,50 @@ export default function MatchPanel() {
         <div className="flex-[2] bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-blue-600">我方 API ({apisA.length})</h2>
           <p className="text-xs text-gray-400 mb-3">在左侧展开客户API后，为每个参数选择映射到我方哪个接口和字段</p>
-          {apisA.map((api, i) => (
+          {apisA.map((api, i) => {
+            const flatIn = flattenParams(api.inputParams || [])
+            const flatOut = flattenParams(api.outputParams || [])
+            const total = flatIn.length + flatOut.length
+            return (
             <details key={i} className="mb-2 text-sm">
               <summary className="cursor-pointer hover:text-blue-600 py-0.5">
                 <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
                 {api.name || api.url || `接口 #${i + 1}`}
-                <span className="text-xs text-gray-400 ml-1">({(api.inputParams || []).length} 参数)</span>
+                <span className="text-xs text-gray-400 ml-1">({total} 参数)</span>
               </summary>
               <div className="ml-4 mt-1 text-xs text-gray-500">
                 {api.url && <div className="font-mono mb-1">{api.url}</div>}
-                {(api.inputParams || []).map((p) => (
-                  <div key={p.name} className="flex gap-2 py-0.5">
-                    <span className="font-mono text-blue-600 w-28 shrink-0">{p.name}</span>
-                    <span className="text-gray-400 w-16 shrink-0">{p.type}</span>
-                    <span className="text-gray-500 truncate">{p.description}</span>
-                  </div>
-                ))}
-                {(api.inputParams || []).length === 0 && <span className="text-gray-300">无参数</span>}
+                {flatIn.length > 0 && (
+                  <>
+                    <div className="text-gray-400 text-[10px] mb-0.5">输入参数 ({flatIn.length})</div>
+                    {flatIn.map((p, j) => (
+                      <div key={`in-${j}`} className="flex gap-2 py-0.5" style={{ paddingLeft: (p._depth || 0) * 12 }}>
+                        {(p._depth || 0) > 0 && <span className="text-purple-300 shrink-0">{'└ '.repeat(p._depth)}</span>}
+                        <span className="font-mono text-blue-600 w-24 shrink-0">{p.name}</span>
+                        <span className="text-gray-400 w-14 shrink-0">{p.type}</span>
+                        {p.required && <span className="text-red-400 text-[10px] shrink-0">必填</span>}
+                        <span className="text-gray-500 truncate">{p.description}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {flatOut.length > 0 && (
+                  <>
+                    <div className="text-gray-400 text-[10px] mb-0.5 mt-1">输出参数 ({flatOut.length})</div>
+                    {flatOut.map((p, j) => (
+                      <div key={`out-${j}`} className="flex gap-2 py-0.5" style={{ paddingLeft: (p._depth || 0) * 12 }}>
+                        {(p._depth || 0) > 0 && <span className="text-purple-300 shrink-0">{'└ '.repeat(p._depth)}</span>}
+                        <span className="font-mono text-green-600 w-24 shrink-0">{p.name}</span>
+                        <span className="text-gray-400 w-14 shrink-0">{p.type}</span>
+                        <span className="text-gray-500 truncate">{p.description}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {total === 0 && <span className="text-gray-300">无参数</span>}
               </div>
             </details>
-          ))}
+          )})}
         </div>
       </div>
 
