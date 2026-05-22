@@ -168,25 +168,22 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     const { rows, mapping } = scanResult
     const hasReq = scannerOpen.startsWith('inputParams')
 
-    // 构建带层级的参数树
-    const buildParams = (rows) => {
-      const result = []
-      let i = 0
-      while (i < rows.length) {
-        const param = buildParam(rows[i], mapping, hasReq)
-        i++
-        // 收集子参数（level 更大的行）
-        while (i < rows.length && rows[i].level > rows[i - 1].level) {
-          const children = buildParams(rows.slice(i))
-          param.children = [...(param.children || []), ...children.params]
-          i += children.consumed
-        }
-        result.push(param)
+    // 栈式层级构建：每个 row 根据 level 找到正确的父节点
+    const root = { children: [], level: -1 }
+    const stack = [root]
+
+    for (const row of rows) {
+      const param = buildParam(row, mapping, hasReq)
+      // 弹出栈直到找到 level 小于当前行的父节点
+      while (stack.length > 0 && stack[stack.length - 1].level >= row.level) {
+        stack.pop()
       }
-      return { params: result, consumed: rows.length }
+      const parent = stack[stack.length - 1]
+      parent.children.push(param)
+      stack.push({ ...param, level: row.level, children: param.children })
     }
 
-    const { params: newParams } = buildParams(rows)
+    const newParams = root.children
 
     const existingNames = new Set(getParamsAt(scannerOpen).map((p) => p.name))
     const filtered = newParams.filter((p) => p.name && !existingNames.has(p.name))
