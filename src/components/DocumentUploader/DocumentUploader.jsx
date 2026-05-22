@@ -55,7 +55,13 @@ export default function DocumentUploader() {
 
       {apisA.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 text-sm text-green-700">
-          我方已预置 <strong>{apisA.length}</strong> 个接口，将直接用于匹配。此处只需上传客户侧文档。
+          我方接口已就绪，将直接用于匹配。此处只需上传客户侧文档。
+        </div>
+      )}
+      {apisA.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-sm text-amber-700">
+          尚未配置我方接口，请先到 <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
+            className="text-blue-600 underline">API 管理</button> 从库中导入。
         </div>
       )}
 
