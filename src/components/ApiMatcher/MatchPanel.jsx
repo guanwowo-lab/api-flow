@@ -17,14 +17,14 @@ export default function MatchPanel() {
   })
   const [expandedClient, setExpandedClient] = useState(null)
 
-  const getMapping = (clientIdx, paramName, paramType) => {
-    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramName && m.paramType === paramType)
+  const getMapping = (clientIdx, paramKey, paramType) => {
+    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
   }
 
-  const setMapping = async (clientIdx, paramName, paramType, ourApiIdx, ourParam, status) => {
-    const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramName && m.paramType === paramType))
+  const setMapping = async (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
+    const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
     if (status !== 'unset') {
-      list.push({ clientParam: paramName, paramType, ourApiIdx, ourParam, status })
+      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status })
     }
     const updated = { ...mappings, [clientIdx]: list }
     setMappings(updated)
@@ -38,25 +38,21 @@ export default function MatchPanel() {
     await saveMatches(state.project.id, { mappings: updated })
   }
 
-  const countParams = (params) => {
-    let count = params.length
-    for (const p of params) {
-      if (p.children && p.children.length > 0) count += countParams(p.children)
-    }
-    return count
-  }
-
   const getMatchStats = (clientIdx) => {
     const list = mappings[clientIdx] || []
     const api = apisB[clientIdx]
-    const total = countParams(api?.inputParams || []) + countParams(api?.outputParams || [])
+    const flatIn = flattenParams(api?.inputParams || [])
+    const flatOut = flattenParams(api?.outputParams || [])
+    const total = flatIn.length + flatOut.length
     const matched = list.filter((m) => m.status === 'matched' && m.ourParam).length
     const missing = list.filter((m) => m.status === 'missing').length
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
   const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched' && m.ourParam).length, 0)
-  const totalParams = apisB.reduce((sum, api) => sum + countParams(api.inputParams || []) + countParams(api.outputParams || []), 0)
+  const totalParams = apisB.reduce((sum, api) => {
+    return sum + flattenParams(api.inputParams || []).length + flattenParams(api.outputParams || []).length
+  }, 0)
 
   const handleContinue = () => {
     dispatch({ type: 'SET_VIEW', payload: 'sequence' })
@@ -120,8 +116,8 @@ export default function MatchPanel() {
                           const flatOut = flattenParams(api.outputParams || [])
                           const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
                           const existing = mappings[i] || []
-                          const other = existing.filter(m => !allP.some(p => p.name === m.clientParam && p.paramType === m.paramType))
-                          const added = allP.map(p => ({ clientParam: p.name, paramType: p.paramType, ourApiIdx: apiIdx, ourParam: '', status: 'matched' }))
+                          const other = existing.filter(m => !allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
+                          const added = allP.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourParam: '', status: 'matched' }))
                           const updated = { ...mappings, [i]: [...other, ...added] }
                           setMappings(updated)
                           saveMatches(state.project.id, { mappings: updated })
@@ -132,8 +128,8 @@ export default function MatchPanel() {
                       clientApi={api}
                       clientIdx={i}
                       apisA={apisA}
-                      getMapping={(name, type) => getMapping(i, name, type)}
-                      setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
+                      getMapping={(key, type) => getMapping(i, key, type)}
+                      setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
                     />
                   </>
                 )}
@@ -206,12 +202,14 @@ export default function MatchPanel() {
 
 // ---- 客户参数映射表 ----
 
-function flattenParams(params, depth = 0) {
+function flattenParams(params, depth = 0, parentKey = '') {
   const result = []
-  for (const p of params) {
-    result.push({ ...p, _depth: depth })
+  for (let i = 0; i < params.length; i++) {
+    const p = params[i]
+    const key = parentKey ? `${parentKey}.${p.name}` : p.name
+    result.push({ ...p, _depth: depth, _key: key })
     if (p.children && p.children.length > 0) {
-      result.push(...flattenParams(p.children, depth + 1))
+      result.push(...flattenParams(p.children, depth + 1, key))
     }
   }
   return result
@@ -242,7 +240,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
       </thead>
       <tbody>
         {params.map((pb, i) => {
-          const m = getMapping(pb.name, paramType)
+          const m = getMapping(pb._key, paramType)
           const selectedApiIdx = m?.ourApiIdx ?? -1
           const selectedApi = apisA[selectedApiIdx]
           const fields = fieldsFromApi(selectedApi)
@@ -267,9 +265,9 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                   onChange={(e) => {
                     const val = e.target.value
                     const apiIdx = parseInt(val)
-                    if (apiIdx >= 0) setMapping(pb.name, paramType, apiIdx, '', 'matched')
-                    else if (val === '__missing') setMapping(pb.name, paramType, -1, '', 'missing')
-                    else setMapping(pb.name, paramType, -1, '', 'unset')
+                    if (apiIdx >= 0) setMapping(pb._key, paramType, apiIdx, '', 'matched')
+                    else if (val === '__missing') setMapping(pb._key, paramType, -1, '', 'missing')
+                    else setMapping(pb._key, paramType, -1, '', 'unset')
                   }}
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
                 >
@@ -287,14 +285,14 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                   value={m?.ourParam === '__skip' ? '不匹配（跳过）' : (m?.ourParam || '')}
                   onChange={(e) => {
                     const val = e.target.value
-                    if (val === '' || val === '-- 选择字段 --') setMapping(pb.name, paramType, -1, '', 'unset')
-                    else if (val === '不匹配（跳过）') setMapping(pb.name, paramType, selectedApiIdx, '__skip', 'matched')
+                    if (val === '' || val === '-- 选择字段 --') setMapping(pb._key, paramType, -1, '', 'unset')
+                    else if (val === '不匹配（跳过）') setMapping(pb._key, paramType, selectedApiIdx, '__skip', 'matched')
                     else if (val && selectedApiIdx >= 0) {
                       const match = fields.find((f) => {
                         const label = ((f._depth || 0) > 0 ? '└ '.repeat(f._depth) : '') + f.name + ' (' + f.type + ')'
                         return label === val || f.name === val
                       })
-                      if (match) setMapping(pb.name, paramType, selectedApiIdx, match.name, 'matched')
+                      if (match) setMapping(pb._key, paramType, selectedApiIdx, match.name, 'matched')
                     }
                   }}
                   onFocus={(e) => e.target.select()}
@@ -314,7 +312,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 {m?.status === 'matched' && m.ourParam && m.ourParam !== '__skip' && <span className="text-green-600 text-[10px]">✓</span>}
                 {m?.status === 'missing' && (
                   <span className="text-red-500 text-[10px] cursor-pointer"
-                    onClick={() => setMapping(pb.name, paramType, -1, '', 'unset')}>✗</span>
+                    onClick={() => setMapping(pb._key, paramType, -1, '', 'unset')}>✗</span>
                 )}
                 {(!m || m.status === 'unset') && <span className="text-gray-300 text-[10px]">—</span>}
               </td>
