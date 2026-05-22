@@ -34,10 +34,17 @@ export default function MatchPanel() {
   }
 
   const updateRemark = (clientIdx, paramKey, paramType, remark) => {
-    const list = (mappings[clientIdx] || []).map((m) =>
-      m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
-    )
-    setMappings((prev) => ({ ...prev, [clientIdx]: list }))
+    const list = mappings[clientIdx] || []
+    const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
+    let updated
+    if (exists) {
+      updated = list.map((m) =>
+        m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
+      )
+    } else {
+      updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
+    }
+    setMappings((prev) => ({ ...prev, [clientIdx]: updated }))
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
   }
 
