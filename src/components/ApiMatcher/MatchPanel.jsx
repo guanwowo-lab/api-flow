@@ -275,7 +275,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
           <th className="text-left py-1 pr-2" style={{ width: '150px' }}>映射到我方接口</th>
           <th className="text-left py-1 pr-2" style={{ width: '130px' }}>映射到字段</th>
           <th className="text-left py-1" style={{ width: '44px' }}>状态</th>
-          <th className="text-left py-1 px-1" style={{ width: '120px' }}>备注</th>
+          <th className="text-left py-1 px-1" style={{ width: '300px' }}>备注</th>
         </tr>
       </thead>
       <tbody>
