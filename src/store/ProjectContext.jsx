@@ -100,9 +100,9 @@ export function ProjectProvider({ children }) {
     await db.projects.update(projectId, { updatedAt: new Date().toISOString() })
   }, [])
 
-  const saveMatches = useCallback(async (projectId, pairs) => {
+  const saveMatches = useCallback(async (projectId, matchData) => {
     const existing = await db.matches.where({ projectId }).first()
-    const data = { projectId, pairs }
+    const data = { projectId, ...matchData }
     if (existing) {
       await db.matches.update(existing.id, data)
       data.id = existing.id
