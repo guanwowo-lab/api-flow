@@ -75,8 +75,14 @@ export default function MatchPanel() {
                 >
                   <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
                   {api.name || api.url || `接口 #${i + 1}`}
-                  <span className="text-xs text-gray-400 ml-2">
-                    {stats.total > 0 && `${stats.matched}/${stats.total}`}
+                  <span className="text-xs ml-2">
+                    {stats.total > 0 && (
+                      stats.matched === stats.total ? (
+                        <span className="text-green-600">{stats.matched}/{stats.total}</span>
+                      ) : (
+                        <span className="text-red-500 font-medium">{stats.matched}/{stats.total}</span>
+                      )
+                    )}
                     {stats.missing > 0 && <span className="text-red-400 ml-1">{stats.missing}缺失</span>}
                   </span>
                 </button>
