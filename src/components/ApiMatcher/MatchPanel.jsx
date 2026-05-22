@@ -23,11 +23,20 @@ export default function MatchPanel() {
 
   const [dirtyClients, setDirtyClients] = useState(new Set())
 
-  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
+  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status, remark) => {
+    const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
     const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
     if (status !== 'unset') {
-      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status })
+      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status, remark: remark !== undefined ? remark : (existing?.remark || '') })
     }
+    setMappings((prev) => ({ ...prev, [clientIdx]: list }))
+    setDirtyClients((prev) => new Set(prev).add(clientIdx))
+  }
+
+  const updateRemark = (clientIdx, paramKey, paramType, remark) => {
+    const list = (mappings[clientIdx] || []).map((m) =>
+      m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
+    )
     setMappings((prev) => ({ ...prev, [clientIdx]: list }))
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
   }
@@ -83,7 +92,7 @@ export default function MatchPanel() {
   }
 
   return (
-    <div className="max-w-[90vw] mx-auto p-6">
+    <div className="mx-auto p-6" style={{ maxWidth: '95vw' }}>
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'extract' })}
           className="text-gray-500 hover:text-gray-700">&larr; 返回</button>
@@ -159,6 +168,7 @@ export default function MatchPanel() {
                       apisA={apisA}
                       getMapping={(key, type) => getMapping(i, key, type)}
                       setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
+                      updateRemark={(key, type, remark) => updateRemark(i, key, type, remark)}
                     />
                   </>
                 )}
@@ -244,7 +254,7 @@ function flattenParams(params, depth = 0, parentKey = '') {
   return result
 }
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping }) {
+function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, updateRemark }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
   const flatInput = flattenParams(inputParams)
@@ -265,6 +275,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
           <th className="text-left py-1 pr-2" style={{ width: '150px' }}>映射到我方接口</th>
           <th className="text-left py-1 pr-2" style={{ width: '130px' }}>映射到字段</th>
           <th className="text-left py-1" style={{ width: '44px' }}>状态</th>
+          <th className="text-left py-1 px-1" style={{ width: '80px' }}>备注</th>
         </tr>
       </thead>
       <tbody>
@@ -344,6 +355,15 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                     onClick={() => setMapping(pb._key, paramType, -1, '', 'unset')}>✗</span>
                 )}
                 {(!m || m.status === 'unset') && <span className="text-gray-300 text-[10px]">—</span>}
+              </td>
+              <td className="py-1 px-1 align-top">
+                <input
+                  type="text"
+                  value={m?.remark || ''}
+                  onChange={(e) => updateRemark(clientIdx, pb._key, paramType, e.target.value)}
+                  className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
+                  placeholder="备注"
+                />
               </td>
             </tr>
           )
