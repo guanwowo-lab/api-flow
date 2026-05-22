@@ -70,7 +70,7 @@ export default function MatchPanel() {
 
       <div className="flex gap-6">
         {/* 左侧：客户 API 列表 */}
-        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex-[3] bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-green-600">客户 API ({apisB.length})</h2>
           {apisB.map((api, i) => {
             const isOpen = expandedClient === i
@@ -112,7 +112,7 @@ export default function MatchPanel() {
         </div>
 
         {/* 右侧：我方 API 参考列表 */}
-        <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
+        <div className="flex-[2] bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-blue-600">我方 API ({apisA.length})</h2>
           <p className="text-xs text-gray-400 mb-3">在左侧展开客户API后，为每个参数选择映射到我方哪个接口和字段</p>
           {apisA.map((api, i) => (
