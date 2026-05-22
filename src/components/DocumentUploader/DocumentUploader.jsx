@@ -54,20 +54,12 @@ export default function DocumentUploader() {
       </div>
 
       {apisA.length > 0 ? (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 text-sm text-green-700 flex items-center justify-between">
-          <span>我方接口已就绪（{apisA.length} 个），将直接用于匹配。</span>
-          <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
-            className="text-blue-600 underline text-xs">
-            管理我方接口 &rarr;
-          </button>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 text-sm text-green-700">
+          我方接口已就绪（{apisA.length} 个），将直接用于匹配。维护我方接口请前往首页"我方 API 库"。
         </div>
       ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-sm text-amber-700">
-          尚未配置我方接口，请先
-          <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
-            className="text-blue-600 underline">
-            进入 API 管理
-          </button> 从库中导入。
+          尚未配置我方接口，请前往首页"我方 API 库"配置。
         </div>
       )}
 
