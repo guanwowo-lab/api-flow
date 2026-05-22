@@ -95,6 +95,10 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     updateParamsAt(pathStr, (params) => params.filter((_, i) => i !== idx))
   }
 
+  const removeAllParams = (pathStr) => {
+    updateParamsAt(pathStr, () => [])
+  }
+
   // ---- 粘贴扫描 ----
 
   const openScanner = (pathStr) => {
@@ -258,6 +262,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             onParamChange={handleParamChange}
             onAddParam={addParam}
             onRemoveParam={removeParam}
+            onRemoveAllParams={removeAllParams}
             isScanning={scannerOpen === ipPath}
             scanResult={scannerOpen === ipPath ? scanResult : null}
             onOpenScanner={() => openScanner(ipPath)}
@@ -282,6 +287,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             onParamChange={handleParamChange}
             onAddParam={addParam}
             onRemoveParam={removeParam}
+            onRemoveAllParams={removeAllParams}
             isScanning={scannerOpen === opPath}
             scanResult={scannerOpen === opPath ? scanResult : null}
             onOpenScanner={() => openScanner(opPath)}
@@ -304,7 +310,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
 
 function ParamGroup({
   path, title, hasRequired, params, depth,
-  expandedPaths, onTogglePath, onParamChange, onAddParam, onRemoveParam,
+  expandedPaths, onTogglePath, onParamChange, onAddParam, onRemoveParam, onRemoveAllParams,
   isScanning, scanResult, onOpenScanner, onCloseScanner, onPasteText, pasteText,
   onDoScan, onChangeMapping, onAdjustLevel, onConfirmImport, onCancelScan,
 }) {
@@ -322,6 +328,10 @@ function ParamGroup({
         <div className="flex gap-2">
           <button type="button" onClick={onOpenScanner} className="text-xs text-purple-600 hover:underline">📋 粘贴扫描</button>
           <button type="button" onClick={() => onAddParam(path)} className="text-xs text-blue-600 hover:underline">+ 添加参数</button>
+          {params.length > 0 && (
+            <button type="button" onClick={() => { if (confirm(`确定删除全部 ${params.length} 个参数？此操作不可撤销。`)) onRemoveAllParams(path) }}
+              className="text-xs text-red-400 hover:text-red-600 hover:underline">全部删除</button>
+          )}
         </div>
       </div>
 
@@ -402,6 +412,7 @@ function ParamGroup({
                 onParamChange={onParamChange}
                 onAddParam={onAddParam}
                 onRemoveParam={onRemoveParam}
+                onRemoveAllParams={onRemoveAllParams}
                 isScanning={false}
                 scanResult={null}
                 onOpenScanner={() => onOpenScanner(`${path}${i}:`)}
