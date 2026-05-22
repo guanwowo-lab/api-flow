@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 
 export default function MatchPanel() {
-  const { state, saveMatches, dispatch } = useProject()
-  const apisA = state.extractA?.apis || []
+  const { state, saveMatches, loadApiFolders, dispatch } = useProject()
+
+  useEffect(() => { loadApiFolders() }, [])
   const apisB = state.extractB?.apis || []
+  // 我方 API 直接从库中读取，保证参数是最新最全的
+  const folders = state.apiFolders || []
+  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
 
   // mappings: { [clientApiIdx]: [{ clientParam, ourApiIdx, ourParam, status }] }
   const [mappings, setMappings] = useState(() => {
