@@ -115,7 +115,17 @@ export default function MatchPanel() {
                         apisA={apisA}
                         inputParams={api.inputParams || []}
                         outputParams={api.outputParams || []}
-                        setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
+                        onBulkMap={(apiIdx) => {
+                          const flatIn = flattenParams(api.inputParams || [])
+                          const flatOut = flattenParams(api.outputParams || [])
+                          const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
+                          const existing = mappings[i] || []
+                          const other = existing.filter(m => !allP.some(p => p.name === m.clientParam && p.paramType === m.paramType))
+                          const added = allP.map(p => ({ clientParam: p.name, paramType: p.paramType, ourApiIdx: apiIdx, ourParam: '', status: 'matched' }))
+                          const updated = { ...mappings, [i]: [...other, ...added] }
+                          setMappings(updated)
+                          saveMatches(state.project.id, { mappings: updated })
+                        }}
                       />
                     </div>
                     <ClientParamMapping
@@ -325,19 +335,12 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
   )
 }
 
-function BulkMapApi({ clientIdx, apisA, inputParams, outputParams, setMapping }) {
+function BulkMapApi({ clientIdx, apisA, onBulkMap }) {
   const [selectedApi, setSelectedApi] = useState(-1)
-
-  const allParams = [
-    ...flattenParams(inputParams || []).map((p) => ({ ...p, paramType: 'input' })),
-    ...flattenParams(outputParams || []).map((p) => ({ ...p, paramType: 'output' })),
-  ]
 
   const handleBulkMap = () => {
     if (selectedApi < 0) return
-    for (const p of allParams) {
-      setMapping(p.name, p.paramType, selectedApi, '', 'matched')
-    }
+    onBulkMap(selectedApi)
   }
 
   return (
