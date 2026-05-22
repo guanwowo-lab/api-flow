@@ -56,7 +56,7 @@ export default function MatchPanel() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-[90vw] mx-auto p-6">
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'extract' })}
           className="text-gray-500 hover:text-gray-700">&larr; 返回</button>
