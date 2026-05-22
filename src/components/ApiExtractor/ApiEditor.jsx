@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { extractApis } from '../../engines/apiExtractor'
 
 const KNOWN_TYPES = new Set([
   'string', 'int', 'integer', 'number', 'float', 'double', 'decimal',
@@ -34,6 +35,8 @@ export default function ApiEditor({ api, onSave, onDelete }) {
   const [scannerOpen, setScannerOpen] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [scanResult, setScanResult] = useState(null)
+  const [apiPasteOpen, setApiPasteOpen] = useState(false)
+  const [apiPasteText, setApiPasteText] = useState('')
   // 跟踪展开的参数路径，格式 "0", "0.1", "0.1.2" ...
   const [expandedPaths, setExpandedPaths] = useState(new Set())
 
@@ -184,6 +187,31 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     setScanResult({ ...scanResult, rows: newRows })
   }
 
+  const doApiPasteScan = () => {
+    const text = apiPasteText.trim()
+    if (!text) return
+    const apis = extractApis(text)
+    if (apis.length === 0) return
+
+    const extracted = apis[0]
+    // 兜底：如果没识别到名称，取第一行（排除 URL 和 HTTP 方法）
+    const firstLine = text.split('\n')[0].trim()
+    const fallbackName = firstLine && !/^(https?:\/\/|\/|[A-Z]+$)/.test(firstLine) ? firstLine : ''
+
+    setDraft((d) => ({
+      ...d,
+      name: extracted.name || fallbackName || d.name,
+      url: extracted.url || d.url,
+      method: extracted.method || d.method,
+      inputParams: extracted.inputParams.length > 0 ? extracted.inputParams : d.inputParams,
+      outputParams: extracted.outputParams.length > 0 ? extracted.outputParams : d.outputParams,
+    }))
+    setSaved(false)
+    setApiPasteOpen(false)
+    setApiPasteText('')
+    setExpanded(true)
+  }
+
   const confirmImport = () => {
     if (!scanResult || !scannerOpen) return
     const { rows, mapping } = scanResult
@@ -257,6 +285,10 @@ export default function ApiEditor({ api, onSave, onDelete }) {
         <button type="button" onClick={() => setExpanded(!expanded)} className="text-sm text-blue-600 hover:underline shrink-0">
           {expanded ? '收起参数' : '编辑参数'}
         </button>
+        <button type="button" onClick={() => { setApiPasteOpen(!apiPasteOpen); setApiPasteText(''); }}
+          className="text-sm text-purple-600 hover:underline shrink-0">
+          📋 粘贴接口
+        </button>
         {!saved && (
           <button type="button" onClick={handleSave} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 shrink-0">
             保存
@@ -265,6 +297,34 @@ export default function ApiEditor({ api, onSave, onDelete }) {
         {saved && <span className="text-xs text-green-600 shrink-0">已保存</span>}
         <button type="button" onClick={onDelete} className="text-red-400 hover:text-red-600 text-sm shrink-0">删除</button>
       </div>
+
+      {apiPasteOpen && (
+        <div className="mb-3 border border-purple-300 rounded-lg bg-purple-50 p-3 ml-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-purple-700">📋 粘贴整个接口信息</span>
+            <button type="button" onClick={() => setApiPasteOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">关闭</button>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">
+            按标准格式粘贴：<strong>第一行接口名称</strong>，下面接服务地址/输入参数/输出参数。程序自动识别填充。
+          </p>
+          <textarea
+            value={apiPasteText}
+            onChange={(e) => setApiPasteText(e.target.value)}
+            className="w-full h-36 px-3 py-2 border border-gray-300 rounded text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            placeholder={'粘贴示例：\n获取商品信息列表接口\n\n/api/v1/products\nPOST\n\n输入参数\nuserId  string  是  用户ID\nuserName  string  是  用户名\n\n输出参数\ncode  int  状态码\ndata  object  商品列表'}
+          />
+          <div className="flex gap-2 mt-2">
+            <button type="button" onClick={doApiPasteScan} disabled={!apiPasteText.trim()}
+              className="px-4 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50">
+              扫描识别并填充
+            </button>
+            <button type="button" onClick={() => setApiPasteOpen(false)}
+              className="px-4 py-1.5 border border-gray-300 rounded text-xs hover:bg-gray-50">
+              取消
+            </button>
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="space-y-4 pl-4 border-l-2 border-blue-200">
