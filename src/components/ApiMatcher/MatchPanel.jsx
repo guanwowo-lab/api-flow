@@ -281,24 +281,33 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 </select>
               </td>
               <td className="py-1 pr-2 align-top">
-                <select
-                  value={m?.ourParam || ''}
+                <input
+                  type="text"
+                  list={`fields-${clientIdx}-${paramType}-${pb.name}`}
+                  value={m?.ourParam === '__skip' ? '不匹配（跳过）' : (m?.ourParam || '')}
                   onChange={(e) => {
                     const val = e.target.value
-                    if (val === '') setMapping(pb.name, paramType, -1, '', 'unset')
-                    else if (val && selectedApiIdx >= 0) setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
+                    if (val === '' || val === '-- 选择字段 --') setMapping(pb.name, paramType, -1, '', 'unset')
+                    else if (val === '不匹配（跳过）') setMapping(pb.name, paramType, selectedApiIdx, '__skip', 'matched')
+                    else if (val && selectedApiIdx >= 0) {
+                      const match = fields.find((f) => {
+                        const label = ((f._depth || 0) > 0 ? '└ '.repeat(f._depth) : '') + f.name + ' (' + f.type + ')'
+                        return label === val || f.name === val
+                      })
+                      if (match) setMapping(pb.name, paramType, selectedApiIdx, match.name, 'matched')
+                    }
                   }}
+                  onFocus={(e) => e.target.select()}
                   disabled={selectedApiIdx < 0}
+                  placeholder="搜索字段..."
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
-                >
-                  <option value="">-- 选择字段 --</option>
+                />
+                <datalist id={`fields-${clientIdx}-${paramType}-${pb.name}`}>
                   {fields.map((f) => (
-                    <option key={f.name} value={f.name}>
-                      {(f._depth || 0) > 0 ? '└ '.repeat(f._depth) : ''}{f.name} ({f.type})
-                    </option>
+                    <option key={f.name} value={((f._depth || 0) > 0 ? '└ '.repeat(f._depth) : '') + f.name + ' (' + f.type + ')'} />
                   ))}
-                  <option value="__skip" className="text-gray-500">不匹配（跳过）</option>
-                </select>
+                  <option value="不匹配（跳过）" />
+                </datalist>
               </td>
               <td className="py-1 align-top">
                 {m?.status === 'matched' && m.ourParam === '__skip' && <span className="text-gray-400 text-[10px]">—</span>}
