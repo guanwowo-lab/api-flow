@@ -99,16 +99,31 @@ ${truncated}`
   const data = await response.json()
   const reply = data?.choices?.[0]?.message?.content || ''
 
-  // 从 AI 回复中提取 JSON
-  const jsonMatch = reply.match(/\[[\s\S]*\]/)
-  if (!jsonMatch) throw new Error('AI 返回格式异常，未找到 JSON 数组')
+  // 从 AI 回复中提取 JSON（支持 markdown 代码块、数组、单个对象）
+  let jsonStr = reply
+  const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (codeBlock) jsonStr = codeBlock[1]
 
+  // 尝试匹配 JSON 数组
+  let arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
+  // 也尝试匹配单个对象（只有一个接口时 AI 可能返回对象而非数组）
+  const objectMatch = jsonStr.match(/\{[\s\S]*\}/)
+
+  let parsed
   try {
-    const apis = JSON.parse(jsonMatch[0])
-    return apis.map(normalizeApi)
+    if (arrayMatch) {
+      parsed = JSON.parse(arrayMatch[0])
+    } else if (objectMatch) {
+      const obj = JSON.parse(objectMatch[0])
+      parsed = Array.isArray(obj) ? obj : [obj]  // 单个对象包成数组
+    } else {
+      throw new Error('AI 返回格式异常，未找到 JSON。返回内容: ' + reply.slice(0, 500))
+    }
   } catch (e) {
-    throw new Error('AI 返回的 JSON 解析失败: ' + e.message)
+    throw new Error('AI 返回的 JSON 解析失败: ' + e.message + '\n\n返回内容: ' + reply.slice(0, 500))
   }
+
+  return (Array.isArray(parsed) ? parsed : [parsed]).map(normalizeApi)
 }
 
 function normalizeApi(api) {
