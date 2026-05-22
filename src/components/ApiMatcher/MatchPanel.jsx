@@ -21,21 +21,33 @@ export default function MatchPanel() {
     return (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
   }
 
-  const setMapping = async (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
+  const [dirtyClients, setDirtyClients] = useState(new Set())
+
+  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
     if (status !== 'unset') {
       list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status })
     }
-    const updated = { ...mappings, [clientIdx]: list }
-    setMappings(updated)
-    await saveMatches(state.project.id, { mappings: updated })
+    setMappings((prev) => ({ ...prev, [clientIdx]: list }))
+    setDirtyClients((prev) => new Set(prev).add(clientIdx))
   }
 
-  const clearMappings = async (clientIdx) => {
-    const updated = { ...mappings }
-    delete updated[clientIdx]
-    setMappings(updated)
-    await saveMatches(state.project.id, { mappings: updated })
+  const clearMappings = (clientIdx) => {
+    setMappings((prev) => {
+      const updated = { ...prev }
+      delete updated[clientIdx]
+      return updated
+    })
+    setDirtyClients((prev) => new Set(prev).add(clientIdx))
+  }
+
+  const saveMapping = async (clientIdx) => {
+    await saveMatches(state.project.id, { mappings })
+    setDirtyClients((prev) => {
+      const next = new Set(prev)
+      next.delete(clientIdx)
+      return next
+    })
   }
 
   const validKeys = (clientIdx) => {
@@ -118,6 +130,12 @@ export default function MatchPanel() {
                       >
                         清除该接口匹配
                       </button>
+                      <button
+                        onClick={() => saveMapping(i)}
+                        className={`text-xs px-2 py-0.5 rounded ${dirtyClients.has(i) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
+                      >
+                        {dirtyClients.has(i) ? '● 保存匹配' : '已保存 ✓'}
+                      </button>
                       <BulkMapApi
                         clientIdx={i}
                         apisA={apisA}
@@ -130,9 +148,8 @@ export default function MatchPanel() {
                           const existing = mappings[i] || []
                           const other = existing.filter(m => !allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
                           const added = allP.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourParam: '', status: 'matched' }))
-                          const updated = { ...mappings, [i]: [...other, ...added] }
-                          setMappings(updated)
-                          saveMatches(state.project.id, { mappings: updated })
+                          setMappings(prev => ({ ...prev, [i]: [...other, ...added] }))
+                          setDirtyClients(prev => new Set(prev).add(i))
                         }}
                       />
                     </div>
