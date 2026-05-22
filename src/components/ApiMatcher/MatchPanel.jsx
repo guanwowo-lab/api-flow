@@ -12,6 +12,8 @@ export default function MatchPanel() {
     [apisA, apisB]
   )
 
+  const [expandedApi, setExpandedApi] = useState(null) // { side: 'A'|'B', index: number }
+
   const [pairs, setPairs] = useState(() => {
     if (state.matches?.pairs) return state.matches.pairs
     return recommendations.map((r) => ({
@@ -82,22 +84,40 @@ export default function MatchPanel() {
       <div className="flex gap-6 mb-6">
         <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[70vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-blue-600">我方 API</h2>
-          {apisA.map((api, i) => (
-            <div key={i} className="text-sm py-1 px-2 rounded hover:bg-blue-50">
-              <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
-              {api.name || api.url || `接口 #${i + 1}`}
-            </div>
-          ))}
+          {apisA.map((api, i) => {
+            const isOpen = expandedApi?.side === 'A' && expandedApi?.index === i
+            return (
+              <div key={i}>
+                <button
+                  onClick={() => setExpandedApi(isOpen ? null : { side: 'A', index: i })}
+                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-blue-50 ${isOpen ? 'bg-blue-50 font-medium' : ''}`}
+                >
+                  <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
+                  {api.name || api.url || `接口 #${i + 1}`}
+                </button>
+                {isOpen && <ApiDetail api={api} />}
+              </div>
+            )
+          })}
         </div>
 
         <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[70vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-green-600">客户 API</h2>
-          {apisB.map((api, i) => (
-            <div key={i} className="text-sm py-1 px-2 rounded hover:bg-green-50">
-              <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
-              {api.name || api.url || `接口 #${i + 1}`}
-            </div>
-          ))}
+          {apisB.map((api, i) => {
+            const isOpen = expandedApi?.side === 'B' && expandedApi?.index === i
+            return (
+              <div key={i}>
+                <button
+                  onClick={() => setExpandedApi(isOpen ? null : { side: 'B', index: i })}
+                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-green-50 ${isOpen ? 'bg-green-50 font-medium' : ''}`}
+                >
+                  <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
+                  {api.name || api.url || `接口 #${i + 1}`}
+                </button>
+                {isOpen && <ApiDetail api={api} />}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -171,6 +191,49 @@ export default function MatchPanel() {
           继续设计流程图
         </button>
       </div>
+    </div>
+  )
+}
+
+function ApiDetail({ api }) {
+  const inputParams = api.inputParams || []
+  const outputParams = api.outputParams || []
+
+  return (
+    <div className="ml-4 mt-1 mb-2 p-2 bg-gray-50 rounded border border-gray-200 text-xs">
+      {api.url && (
+        <div className="text-gray-500 font-mono mb-1">{api.method} {api.url}</div>
+      )}
+      {inputParams.length > 0 && (
+        <div className="mb-1">
+          <div className="text-gray-400 mb-0.5">输入参数 ({inputParams.length})：</div>
+          {inputParams.map((p, i) => (
+            <div key={i} className="ml-3 py-0.5 flex gap-2">
+              <span className="font-mono text-blue-600">{p.name}</span>
+              <span className="text-gray-400">{p.type}</span>
+              {p.required && <span className="text-red-400 text-[10px]">必填</span>}
+              <span className="text-gray-500">{p.description}</span>
+              {p.remark && <span className="text-gray-300 text-[10px]">{p.remark}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {outputParams.length > 0 && (
+        <div>
+          <div className="text-gray-400 mb-0.5">输出参数 ({outputParams.length})：</div>
+          {outputParams.map((p, i) => (
+            <div key={i} className="ml-3 py-0.5 flex gap-2">
+              <span className="font-mono text-green-600">{p.name}</span>
+              <span className="text-gray-400">{p.type}</span>
+              <span className="text-gray-500">{p.description}</span>
+              {p.remark && <span className="text-gray-300 text-[10px]">{p.remark}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {inputParams.length === 0 && outputParams.length === 0 && (
+        <div className="text-gray-400">暂无参数信息</div>
+      )}
     </div>
   )
 }
