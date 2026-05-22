@@ -235,10 +235,12 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                   {fields.map((f) => (
                     <option key={f.name} value={f.name}>{f.name} ({f.type})</option>
                   ))}
+                  <option value="__skip" className="text-gray-500">不匹配（跳过）</option>
                 </select>
               </td>
               <td className="py-1 align-top">
-                {m?.status === 'matched' && m.ourParam && <span className="text-green-600 text-[10px]">✓</span>}
+                {m?.status === 'matched' && m.ourParam === '__skip' && <span className="text-gray-400 text-[10px]">—</span>}
+                {m?.status === 'matched' && m.ourParam && m.ourParam !== '__skip' && <span className="text-green-600 text-[10px]">✓</span>}
                 {m?.status === 'missing' && (
                   <span className="text-red-500 text-[10px] cursor-pointer"
                     onClick={() => setMapping(pb.name, paramType, -1, '', 'unset')}>✗</span>
