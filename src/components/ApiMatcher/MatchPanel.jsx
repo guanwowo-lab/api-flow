@@ -364,12 +364,9 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 {(!m || m.status === 'unset') && <span className="text-gray-300 text-[10px]">—</span>}
               </td>
               <td className="py-1 px-1 align-top">
-                <input
-                  type="text"
+                <RemarkInput
                   value={m?.remark || ''}
-                  onChange={(e) => updateRemark(clientIdx, pb._key, paramType, e.target.value)}
-                  className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
-                  placeholder="备注"
+                  onBlur={(val) => updateRemark(clientIdx, pb._key, paramType, val)}
                 />
               </td>
             </tr>
@@ -395,6 +392,22 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
         </>
       )}
     </div>
+  )
+}
+
+function RemarkInput({ value, onBlur }) {
+  const [local, setLocal] = useState(value)
+  useEffect(() => { setLocal(value) }, [value])
+  return (
+    <input
+      type="text"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) onBlur(local) }}
+      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
+      className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
+      placeholder="备注"
+    />
   )
 }
 
