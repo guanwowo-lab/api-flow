@@ -37,6 +37,7 @@ export default function ApiEditor({ api, onSave, onDelete }) {
   const [scanResult, setScanResult] = useState(null)
   const [apiPasteOpen, setApiPasteOpen] = useState(false)
   const [apiPasteText, setApiPasteText] = useState('')
+  const [scannerChain, setScannerChain] = useState(null) // null | { extracted, nextType }
   // 跟踪展开的参数路径，格式 "0", "0.1", "0.1.2" ...
   const [expandedPaths, setExpandedPaths] = useState(new Set())
 
@@ -194,22 +195,57 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     if (apis.length === 0) return
 
     const extracted = apis[0]
-    // 兜底：如果没识别到名称，取第一行（排除 URL 和 HTTP 方法）
     const firstLine = text.split('\n')[0].trim()
     const fallbackName = firstLine && !/^(https?:\/\/|\/|[A-Z]+$)/.test(firstLine) ? firstLine : ''
 
+    // 填充基本字段
     setDraft((d) => ({
       ...d,
       name: extracted.name || fallbackName || d.name,
       url: extracted.url || d.url,
       method: extracted.method || d.method,
-      inputParams: extracted.inputParams.length > 0 ? extracted.inputParams : d.inputParams,
-      outputParams: extracted.outputParams.length > 0 ? extracted.outputParams : d.outputParams,
     }))
     setSaved(false)
     setApiPasteOpen(false)
     setApiPasteText('')
     setExpanded(true)
+
+    // 打开输入参数扫描预览（预填充）
+    const inputRows = paramsToRows(extracted.inputParams)
+    const outputRows = paramsToRows(extracted.outputParams)
+    if (inputRows.length > 0) {
+      openScannerWithData('inputParams:', inputRows, outputRows.length > 0 ? 'outputParams:' : null)
+    } else if (outputRows.length > 0) {
+      openScannerWithData('outputParams:', outputRows, null)
+    }
+  }
+
+  const paramsToRows = (params, level = 0) => {
+    const rows = []
+    for (const p of params) {
+      rows.push({
+        cells: [p.name || '', p.type || '', p.required ? '是' : '否', p.description || '', p.remark || ''],
+        level,
+      })
+      if (p.children && p.children.length > 0) {
+        rows.push(...paramsToRows(p.children, level + 1))
+      }
+    }
+    return rows
+  }
+
+  const openScannerWithData = (pathStr, rows, nextType) => {
+    const hasReq = pathStr.startsWith('inputParams')
+    const fields = hasReq
+      ? ['name', 'type', 'required', 'description', 'remark']
+      : ['name', 'type', 'description', 'remark']
+    const mapping = {}
+    fields.forEach((f, i) => { mapping[i] = f })
+
+    setScannerOpen(pathStr)
+    setPasteText('')
+    setScanResult({ headers: null, rows, mapping })
+    setScannerChain(nextType ? { nextType } : null)
   }
 
   const confirmImport = () => {
@@ -217,13 +253,11 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     const { rows, mapping } = scanResult
     const hasReq = scannerOpen.startsWith('inputParams')
 
-    // 栈式层级构建：每个 row 根据 level 找到正确的父节点
     const root = { children: [], level: -1 }
     const stack = [root]
 
     for (const row of rows) {
       const param = buildParam(row, mapping, hasReq)
-      // 弹出栈直到找到 level 小于当前行的父节点
       while (stack.length > 0 && stack[stack.length - 1].level >= row.level) {
         stack.pop()
       }
@@ -233,14 +267,30 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     }
 
     const newParams = root.children
-
     const existingNames = new Set(getParamsAt(scannerOpen).map((p) => p.name))
     const filtered = newParams.filter((p) => p.name && !existingNames.has(p.name))
 
     updateParamsAt(scannerOpen, (params) => [...params, ...filtered])
+
+    // 链式：如果还有下一组参数，打开下一个扫描器
+    if (scannerChain && scannerChain.nextType) {
+      const nextPath = scannerChain.nextType
+      const extracted = extractApis(apiPasteText || '')
+      const source = extracted.length > 0 ? extracted[0] : null
+      const nextName = nextPath.startsWith('inputParams') ? 'inputParams' : 'outputParams'
+      const nextParams = source ? (source[nextName] || []) : []
+      const nextRows = paramsToRows(nextParams)
+
+      if (nextRows.length > 0) {
+        openScannerWithData(nextPath, nextRows, null)
+        return
+      }
+    }
+
     setScannerOpen(null)
     setScanResult(null)
     setPasteText('')
+    setScannerChain(null)
   }
 
   const changeMapping = (colIdx, field) => {
