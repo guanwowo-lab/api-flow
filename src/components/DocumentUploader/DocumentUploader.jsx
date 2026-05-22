@@ -53,15 +53,21 @@ export default function DocumentUploader() {
         <h1 className="text-xl font-bold">上传客户文档 — {state.project?.name}</h1>
       </div>
 
-      {apisA.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 text-sm text-green-700">
-          我方接口已就绪，将直接用于匹配。此处只需上传客户侧文档。
+      {apisA.length > 0 ? (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 text-sm text-green-700 flex items-center justify-between">
+          <span>我方接口已就绪（{apisA.length} 个），将直接用于匹配。</span>
+          <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
+            className="text-blue-600 underline text-xs">
+            管理我方接口 &rarr;
+          </button>
         </div>
-      )}
-      {apisA.length === 0 && (
+      ) : (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-sm text-amber-700">
-          尚未配置我方接口，请先到 <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
-            className="text-blue-600 underline">API 管理</button> 从库中导入。
+          尚未配置我方接口，请先
+          <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'manage' })}
+            className="text-blue-600 underline">
+            进入 API 管理
+          </button> 从库中导入。
         </div>
       )}
 
