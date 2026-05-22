@@ -37,7 +37,6 @@ export default function ApiEditor({ api, onSave, onDelete }) {
   const [scanResult, setScanResult] = useState(null)
   const [apiPasteOpen, setApiPasteOpen] = useState(false)
   const [apiPasteText, setApiPasteText] = useState('')
-  const [scannerChain, setScannerChain] = useState(null) // null | { extracted, nextType }
   // 跟踪展开的参数路径，格式 "0", "0.1", "0.1.2" ...
   const [expandedPaths, setExpandedPaths] = useState(new Set())
 
@@ -191,61 +190,31 @@ export default function ApiEditor({ api, onSave, onDelete }) {
   const doApiPasteScan = () => {
     const text = apiPasteText.trim()
     if (!text) return
+
     const apis = extractApis(text)
-    if (apis.length === 0) return
+    const extracted = apis.length > 0 ? apis[0] : null
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
 
-    const extracted = apis[0]
-    const firstLine = text.split('\n')[0].trim()
-    const fallbackName = firstLine && !/^(https?:\/\/|\/|[A-Z]+$)/.test(firstLine) ? firstLine : ''
+    // 名称：优先用提取结果，否则取第一行（排除 URL 和方法）
+    let name = extracted?.name || ''
+    if (!name) {
+      name = lines.find((l) => !/^(https?:\/\/|\/|[A-Z]{3,}$)/.test(l)) || ''
+    }
 
-    // 填充基本字段
+    // URL + method：从提取结果或文本中匹配
+    const urlMatch = text.match(/(\/[^\s,，。\n]{2,}|\bhttps?:\/\/[^\s,，。\n]+)/)
+    const url = extracted?.url || (urlMatch ? urlMatch[1] : '')
+    const method = extracted?.method || 'GET'
+
     setDraft((d) => ({
       ...d,
-      name: extracted.name || fallbackName || d.name,
-      url: extracted.url || d.url,
-      method: extracted.method || d.method,
+      name: name || d.name,
+      url: url || d.url,
+      method: method !== 'GET' ? method : d.method,
     }))
     setSaved(false)
     setApiPasteOpen(false)
     setApiPasteText('')
-    setExpanded(true)
-
-    // 打开输入参数扫描预览（预填充）
-    const inputRows = paramsToRows(extracted.inputParams)
-    const outputRows = paramsToRows(extracted.outputParams)
-    if (inputRows.length > 0) {
-      openScannerWithData('inputParams:', inputRows, outputRows.length > 0 ? 'outputParams:' : null)
-    } else if (outputRows.length > 0) {
-      openScannerWithData('outputParams:', outputRows, null)
-    }
-  }
-
-  const paramsToRows = (params, level = 0) => {
-    const rows = []
-    for (const p of params) {
-      rows.push({
-        cells: [p.name || '', p.type || '', p.required ? '是' : '否', p.description || '', p.remark || ''],
-        level,
-      })
-      if (p.children && p.children.length > 0) {
-        rows.push(...paramsToRows(p.children, level + 1))
-      }
-    }
-    return rows
-  }
-
-  const openScannerWithData = (pathStr, rows, nextType) => {
-    const hasReq = pathStr.startsWith('inputParams')
-    const fields = hasReq
-      ? ['name', 'type', 'required', 'description', 'remark']
-      : ['name', 'type', 'description', 'remark']
-    const mapping = {}
-    fields.forEach((f, i) => { mapping[i] = f })
-
-    setScannerOpen(pathStr)
-    setPasteText('')
-    setScanResult({ headers: null, rows, mapping })
-    setScannerChain(nextType ? { nextType } : null)
   }
 
   const confirmImport = () => {
@@ -271,26 +240,9 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     const filtered = newParams.filter((p) => p.name && !existingNames.has(p.name))
 
     updateParamsAt(scannerOpen, (params) => [...params, ...filtered])
-
-    // 链式：如果还有下一组参数，打开下一个扫描器
-    if (scannerChain && scannerChain.nextType) {
-      const nextPath = scannerChain.nextType
-      const extracted = extractApis(apiPasteText || '')
-      const source = extracted.length > 0 ? extracted[0] : null
-      const nextName = nextPath.startsWith('inputParams') ? 'inputParams' : 'outputParams'
-      const nextParams = source ? (source[nextName] || []) : []
-      const nextRows = paramsToRows(nextParams)
-
-      if (nextRows.length > 0) {
-        openScannerWithData(nextPath, nextRows, null)
-        return
-      }
-    }
-
     setScannerOpen(null)
     setScanResult(null)
     setPasteText('')
-    setScannerChain(null)
   }
 
   const changeMapping = (colIdx, field) => {
@@ -355,13 +307,13 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             <button type="button" onClick={() => setApiPasteOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">关闭</button>
           </div>
           <p className="text-xs text-gray-500 mb-2">
-            按标准格式粘贴：<strong>第一行接口名称</strong>，下面接服务地址/输入参数/输出参数。程序自动识别填充。
+            粘贴<strong>接口名称</strong>和<strong>服务地址</strong>，自动识别填充。参数请在展开后使用参数级粘贴扫描。
           </p>
           <textarea
             value={apiPasteText}
             onChange={(e) => setApiPasteText(e.target.value)}
-            className="w-full h-36 px-3 py-2 border border-gray-300 rounded text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-            placeholder={'粘贴示例：\n获取商品信息列表接口\n\n/api/v1/products\nPOST\n\n输入参数\nuserId  string  是  用户ID\nuserName  string  是  用户名\n\n输出参数\ncode  int  状态码\ndata  object  商品列表'}
+            className="w-full h-24 px-3 py-2 border border-gray-300 rounded text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            placeholder={'粘贴示例：\n获取商品信息列表接口\n/api/v1/products\nPOST'}
           />
           <div className="flex gap-2 mt-2">
             <button type="button" onClick={doApiPasteScan} disabled={!apiPasteText.trim()}
