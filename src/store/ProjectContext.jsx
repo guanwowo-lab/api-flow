@@ -79,7 +79,12 @@ export function ProjectProvider({ children }) {
     const map = await db.flowDiagrams.where({ projectId: id, type: 'mapping' }).first()
     if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
 
-    dispatch({ type: 'SET_VIEW', payload: 'upload' })
+    // 根据已有数据决定跳转：有客户API则直接去匹配，否则去上传
+    if (extractB && extractB.apis && extractB.apis.length > 0) {
+      dispatch({ type: 'SET_VIEW', payload: 'match' })
+    } else {
+      dispatch({ type: 'SET_VIEW', payload: 'upload' })
+    }
   }, [])
 
   const saveExtract = useCallback(async (projectId, side, apis) => {
