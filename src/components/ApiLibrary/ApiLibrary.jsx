@@ -71,8 +71,10 @@ export default function ApiLibrary() {
   }
 
   const handleSaveFolder = async () => {
-    if (!selected) return
-    await saveApiFolder({ ...selected, apis: draftApis })
+    if (!selectedId) return
+    const folder = await db.apiFolders.get(selectedId)
+    if (!folder) return
+    await saveApiFolder({ ...folder, apis: draftApis })
     setDirty(false)
   }
 
@@ -137,14 +139,14 @@ export default function ApiLibrary() {
         </div>
 
         <div className="flex-1">
-          {!selected ? (
+          {!selectedId ? (
             <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
               <p>选择一个文件夹查看其接口</p>
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium">{selected.name} — 接口列表</h2>
+                <h2 className="font-medium">{selected?.name || '加载中...'} — 接口列表</h2>
                 <div className="flex gap-2">
                   <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
                     + 添加接口
