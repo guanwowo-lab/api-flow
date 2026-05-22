@@ -464,7 +464,7 @@ function ParamGroup({
       {params.map((p, i) => {
         const childPath = `${path}${i}`
         const isExpanded = expandedPaths.has(childPath)
-        const canHaveChildren = hasChildren(p.type)
+        const canHaveChildren = hasChildren(p.type) || (p.children && p.children.length > 0)
 
         return (
           <div key={i}>
