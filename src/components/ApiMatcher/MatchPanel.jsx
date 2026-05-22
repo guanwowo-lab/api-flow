@@ -257,7 +257,9 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 >
                   <option value="">-- 选择字段 --</option>
                   {fields.map((f) => (
-                    <option key={f.name} value={f.name}>{f.name} ({f.type})</option>
+                    <option key={f.name} value={f.name}>
+                      {(f._depth || 0) > 0 ? '└ '.repeat(f._depth) : ''}{f.name} ({f.type})
+                    </option>
                   ))}
                   <option value="__skip" className="text-gray-500">不匹配（跳过）</option>
                 </select>
@@ -284,13 +286,13 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
       {flatInput.length > 0 && (
         <>
           <div className="text-gray-500 font-medium mb-1">输入参数 ({flatInput.length})</div>
-          {renderTable(flatInput, 'input', (api) => api?.inputParams || [])}
+          {renderTable(flatInput, 'input', (api) => flattenParams(api?.inputParams || []))}
         </>
       )}
       {flatOutput.length > 0 && (
         <>
           <div className="text-gray-500 font-medium mb-1 mt-2">输出参数 ({flatOutput.length})</div>
-          {renderTable(flatOutput, 'output', (api) => api?.outputParams || [])}
+          {renderTable(flatOutput, 'output', (api) => flattenParams(api?.outputParams || []))}
         </>
       )}
     </div>
