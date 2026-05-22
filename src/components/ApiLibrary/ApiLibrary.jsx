@@ -12,7 +12,6 @@ export default function ApiLibrary() {
   const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
-    // 自动清理垃圾数据文件夹 + 加载
     db.apiFolders.toArray().then((all) => {
       const junk = all.filter((f) => f.name.startsWith('垃圾数据'))
       if (junk.length > 0) {
@@ -27,10 +26,12 @@ export default function ApiLibrary() {
   useEffect(() => {
     const folder = folders.find((f) => f.id === selectedId)
     if (folder) {
-      setDraftApis((folder.apis || []).map((a) => ({ ...a })))
+      setDraftApis([...(folder.apis || [])].map((a) => ({ ...a, children: a.children || [] })))
       setDirty(false)
+    } else if (!selectedId) {
+      setDraftApis([])
     }
-  }, [selectedId, folders])
+  }, [selectedId])
 
   const selected = folders.find((f) => f.id === selectedId)
 
