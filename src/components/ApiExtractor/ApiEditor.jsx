@@ -682,7 +682,7 @@ function autoMapColumns(dataRows, colCount, hasRequired) {
     colScores.type = scoreType(values)
     if (hasRequired) colScores.required = scoreRequired(values)
     colScores.description = scoreDescription(values)
-    colScores.remark = scoreRemark(values)
+    colScores.remark = scoreRemark(values, c, colCount)
     scores.push(colScores)
   }
   const remaining = new Set(fields)
@@ -748,10 +748,17 @@ function scoreDescription(values) {
   return score / values.length
 }
 
-function scoreRemark(values) {
+function scoreRemark(values, colIndex, totalCols) {
   let score = 0
   const nonEmpty = values.filter(Boolean)
-  if (nonEmpty.length < values.length * 0.5) score += 2
+  const emptyRatio = 1 - nonEmpty.length / Math.max(values.length, 1)
+
+  // 位置加分：最后一列很可能是备注
+  if (colIndex === totalCols - 1) score += 3
+  // 稀疏列（很多空值）更像备注
+  if (emptyRatio > 0.6) score += 3
+  else if (emptyRatio > 0.3) score += 1
+
   for (const v of values) {
     if (v.length > 20) score += 1
     if (/\d/.test(v) && /[a-zA-Z]/.test(v)) score += 0.5
