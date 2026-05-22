@@ -17,14 +17,14 @@ export default function MatchPanel() {
   })
   const [expandedClient, setExpandedClient] = useState(null)
 
-  const getMapping = (clientIdx, paramName) => {
-    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramName)
+  const getMapping = (clientIdx, paramName, paramType) => {
+    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramName && m.paramType === paramType)
   }
 
-  const setMapping = async (clientIdx, paramName, ourApiIdx, ourParam, status) => {
-    const list = (mappings[clientIdx] || []).filter((m) => m.clientParam !== paramName)
+  const setMapping = async (clientIdx, paramName, paramType, ourApiIdx, ourParam, status) => {
+    const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramName && m.paramType === paramType))
     if (status !== 'unset') {
-      list.push({ clientParam: paramName, ourApiIdx, ourParam, status })
+      list.push({ clientParam: paramName, paramType, ourApiIdx, ourParam, status })
     }
     const updated = { ...mappings, [clientIdx]: list }
     setMappings(updated)
@@ -33,15 +33,15 @@ export default function MatchPanel() {
 
   const getMatchStats = (clientIdx) => {
     const list = mappings[clientIdx] || []
-    const total = (apisB[clientIdx]?.inputParams || []).length
+    const api = apisB[clientIdx]
+    const total = (api?.inputParams || []).length + (api?.outputParams || []).length
     const matched = list.filter((m) => m.status === 'matched').length
     const missing = list.filter((m) => m.status === 'missing').length
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
-  // 统计所有客户API的匹配情况
   const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched').length, 0)
-  const totalParams = apisB.reduce((sum, api) => sum + (api.inputParams || []).length, 0)
+  const totalParams = apisB.reduce((sum, api) => sum + (api.inputParams || []).length + (api.outputParams || []).length, 0)
 
   const handleContinue = () => {
     dispatch({ type: 'SET_VIEW', payload: 'sequence' })
@@ -91,9 +91,8 @@ export default function MatchPanel() {
                     clientApi={api}
                     clientIdx={i}
                     apisA={apisA}
-                    mappings={mappings[i] || []}
-                    getMapping={(name) => getMapping(i, name)}
-                    setMapping={(name, ourApiIdx, ourParam, status) => setMapping(i, name, ourApiIdx, ourParam, status)}
+                    getMapping={(name, type) => getMapping(i, name, type)}
+                    setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
                   />
                 )}
               </div>
@@ -141,96 +140,114 @@ export default function MatchPanel() {
 
 // ---- 客户参数映射表 ----
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, mappings, getMapping, setMapping }) {
+function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping }) {
   const inputParams = clientApi.inputParams || []
+  const outputParams = clientApi.outputParams || []
 
-  if (inputParams.length === 0) {
-    return <div className="ml-4 mt-2 mb-2 text-xs text-gray-400">该接口无输入参数</div>
+  if (inputParams.length === 0 && outputParams.length === 0) {
+    return <div className="ml-4 mt-2 mb-2 text-xs text-gray-400">该接口无参数</div>
   }
+
+  const renderTable = (params, paramType, fieldsFromApi) => (
+    <table className="w-full text-xs mb-3">
+      <thead>
+        <tr className="text-gray-400 border-b border-green-200">
+          <th className="text-left py-1 pr-2 w-[80px]">字段名称</th>
+          <th className="text-left py-1 pr-2 w-[55px]">类型</th>
+          {paramType === 'input' && <th className="text-center py-1 pr-2 w-[36px]">必传</th>}
+          <th className="text-left py-1 pr-2 min-w-[100px]">字段描述</th>
+          <th className="text-left py-1 pr-2 w-[150px]">映射到我方接口</th>
+          <th className="text-left py-1 pr-2 w-[130px]">映射到字段</th>
+          <th className="text-left py-1 w-[44px]">状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        {params.map((pb) => {
+          const m = getMapping(pb.name, paramType)
+          const selectedApiIdx = m?.ourApiIdx ?? -1
+          const selectedApi = apisA[selectedApiIdx]
+          const fields = fieldsFromApi(selectedApi)
+
+          return (
+            <tr key={pb.name} className="border-b border-green-100">
+              <td className="py-1 pr-2 font-mono text-green-700 align-top">{pb.name}</td>
+              <td className="py-1 pr-2 text-gray-500 align-top">{pb.type}</td>
+              {paramType === 'input' && (
+                <td className="py-1 pr-2 text-center align-top">
+                  {pb.required ? <span className="text-red-500">是</span> : <span className="text-gray-300">否</span>}
+                </td>
+              )}
+              <td className="py-1 pr-2 text-gray-500 align-top break-words max-w-[150px]">{pb.description || '—'}</td>
+              <td className="py-1 pr-2 align-top">
+                <select
+                  value={selectedApiIdx}
+                  onChange={(e) => {
+                    const apiIdx = parseInt(e.target.value)
+                    if (apiIdx >= 0) {
+                      setMapping(pb.name, paramType, apiIdx, '', 'matched')
+                    } else if (e.target.value === '__missing') {
+                      setMapping(pb.name, paramType, -1, '', 'missing')
+                    } else {
+                      setMapping(pb.name, paramType, -1, '', 'unset')
+                    }
+                  }}
+                  className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
+                >
+                  <option value={-1}>-- 选择接口 --</option>
+                  {apisA.map((a, ai) => (
+                    <option key={ai} value={ai}>{a.name || `接口${ai + 1}`}</option>
+                  ))}
+                  <option value="__missing" className="text-red-500">标记为缺失</option>
+                </select>
+              </td>
+              <td className="py-1 pr-2 align-top">
+                <select
+                  value={m?.ourParam || ''}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    if (val && selectedApiIdx >= 0) {
+                      setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
+                    }
+                  }}
+                  disabled={selectedApiIdx < 0}
+                  className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
+                >
+                  <option value="">-- 选择字段 --</option>
+                  {fields.map((f) => (
+                    <option key={f.name} value={f.name}>{f.name} ({f.type})</option>
+                  ))}
+                </select>
+              </td>
+              <td className="py-1 align-top">
+                {m?.status === 'matched' && m.ourParam && <span className="text-green-600 text-[10px]">✓</span>}
+                {m?.status === 'missing' && (
+                  <span className="text-red-500 text-[10px] cursor-pointer"
+                    onClick={() => setMapping(pb.name, paramType, -1, '', 'unset')}>✗</span>
+                )}
+                {(!m || m.status === 'unset') && <span className="text-gray-300 text-[10px]">—</span>}
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
 
   return (
     <div className="ml-2 mt-2 mb-3 p-3 bg-green-50 rounded border border-green-200 text-xs">
       <div className="text-gray-500 mb-2 font-mono">{clientApi.method} {clientApi.url}</div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-gray-400 border-b border-green-200">
-            <th className="text-left py-1 pr-2 w-[90px]">客户字段</th>
-            <th className="text-left py-1 pr-2 w-[60px]">类型</th>
-            <th className="text-center py-1 pr-2 w-[36px]">必传</th>
-            <th className="text-left py-1 pr-2 w-[160px]">映射到我方接口</th>
-            <th className="text-left py-1 pr-2 w-[130px]">映射到字段</th>
-            <th className="text-left py-1 w-[50px]">状态</th>
-          </tr>
-        </thead>
-        <tbody>
-          {inputParams.map((pb) => {
-            const m = getMapping(pb.name)
-            const selectedApiIdx = m?.ourApiIdx ?? -1
-            const selectedApi = apisA[selectedApiIdx]
-            const fields = selectedApi?.inputParams || []
-
-            return (
-              <tr key={pb.name} className="border-b border-green-100">
-                <td className="py-1 pr-2 font-mono text-green-700 align-top">{pb.name}</td>
-                <td className="py-1 pr-2 text-gray-500 align-top">{pb.type}</td>
-                <td className="py-1 pr-2 text-center align-top">
-                  {pb.required ? <span className="text-red-500">是</span> : <span className="text-gray-300">否</span>}
-                </td>
-                <td className="py-1 pr-2 align-top">
-                  <select
-                    value={selectedApiIdx}
-                    onChange={(e) => {
-                      const apiIdx = parseInt(e.target.value)
-                      if (apiIdx >= 0) {
-                        setMapping(pb.name, apiIdx, '', 'matched')
-                      } else if (e.target.value === '__missing') {
-                        setMapping(pb.name, -1, '', 'missing')
-                      } else {
-                        setMapping(pb.name, -1, '', 'unset')
-                      }
-                    }}
-                    className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
-                  >
-                    <option value={-1}>-- 选择接口 --</option>
-                    {apisA.map((a, ai) => (
-                      <option key={ai} value={ai}>{a.name || `接口${ai + 1}`}</option>
-                    ))}
-                    <option value="__missing" className="text-red-500">标记为缺失</option>
-                  </select>
-                </td>
-                <td className="py-1 pr-2 align-top">
-                  <select
-                    value={m?.ourParam || ''}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      if (val && selectedApiIdx >= 0) {
-                        setMapping(pb.name, selectedApiIdx, val, 'matched')
-                      }
-                    }}
-                    disabled={selectedApiIdx < 0}
-                    className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
-                  >
-                    <option value="">-- 选择字段 --</option>
-                    {fields.map((f) => (
-                      <option key={f.name} value={f.name}>{f.name} ({f.type})</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-1 align-top">
-                  {m?.status === 'matched' && m.ourParam && (
-                    <span className="text-green-600 text-[10px]">✓</span>
-                  )}
-                  {m?.status === 'missing' && (
-                    <span className="text-red-500 text-[10px] cursor-pointer"
-                      onClick={() => setMapping(pb.name, -1, '', 'unset')}>✗</span>
-                  )}
-                  {(!m || m.status === 'unset') && <span className="text-gray-300 text-[10px]">—</span>}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+      {inputParams.length > 0 && (
+        <>
+          <div className="text-gray-500 font-medium mb-1">输入参数 ({inputParams.length})</div>
+          {renderTable(inputParams, 'input', (api) => api?.inputParams || [])}
+        </>
+      )}
+      {outputParams.length > 0 && (
+        <>
+          <div className="text-gray-500 font-medium mb-1 mt-2">输出参数 ({outputParams.length})</div>
+          {renderTable(outputParams, 'output', (api) => api?.outputParams || [])}
+        </>
+      )}
     </div>
   )
 }
