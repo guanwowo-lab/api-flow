@@ -31,17 +31,25 @@ export default function MatchPanel() {
     await saveMatches(state.project.id, { mappings: updated })
   }
 
+  const countParams = (params) => {
+    let count = params.length
+    for (const p of params) {
+      if (p.children && p.children.length > 0) count += countParams(p.children)
+    }
+    return count
+  }
+
   const getMatchStats = (clientIdx) => {
     const list = mappings[clientIdx] || []
     const api = apisB[clientIdx]
-    const total = (api?.inputParams || []).length + (api?.outputParams || []).length
+    const total = countParams(api?.inputParams || []) + countParams(api?.outputParams || [])
     const matched = list.filter((m) => m.status === 'matched').length
     const missing = list.filter((m) => m.status === 'missing').length
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
   const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched').length, 0)
-  const totalParams = apisB.reduce((sum, api) => sum + (api.inputParams || []).length + (api.outputParams || []).length, 0)
+  const totalParams = apisB.reduce((sum, api) => sum + countParams(api.inputParams || []) + countParams(api.outputParams || []), 0)
 
   const handleContinue = () => {
     dispatch({ type: 'SET_VIEW', payload: 'sequence' })
@@ -140,11 +148,24 @@ export default function MatchPanel() {
 
 // ---- 客户参数映射表 ----
 
+function flattenParams(params, depth = 0) {
+  const result = []
+  for (const p of params) {
+    result.push({ ...p, _depth: depth })
+    if (p.children && p.children.length > 0) {
+      result.push(...flattenParams(p.children, depth + 1))
+    }
+  }
+  return result
+}
+
 function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
+  const flatInput = flattenParams(inputParams)
+  const flatOutput = flattenParams(outputParams)
 
-  if (inputParams.length === 0 && outputParams.length === 0) {
+  if (flatInput.length === 0 && flatOutput.length === 0) {
     return <div className="ml-4 mt-2 mb-2 text-xs text-gray-400">该接口无参数</div>
   }
 
@@ -152,44 +173,44 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
     <table className="w-full text-xs mb-3">
       <thead>
         <tr className="text-gray-400 border-b border-green-200">
-          <th className="text-left py-1 pr-2 w-[80px]">字段名称</th>
-          <th className="text-left py-1 pr-2 w-[55px]">类型</th>
-          {paramType === 'input' && <th className="text-center py-1 pr-2 w-[36px]">必传</th>}
-          <th className="text-left py-1 pr-2 min-w-[100px]">字段描述</th>
-          <th className="text-left py-1 pr-2 w-[150px]">映射到我方接口</th>
-          <th className="text-left py-1 pr-2 w-[130px]">映射到字段</th>
-          <th className="text-left py-1 w-[44px]">状态</th>
+          <th className="text-left py-1 pr-2" style={{ width: '130px' }}>字段名称</th>
+          <th className="text-left py-1 pr-2" style={{ width: '55px' }}>类型</th>
+          {paramType === 'input' && <th className="text-center py-1 pr-2" style={{ width: '36px' }}>必传</th>}
+          <th className="text-left py-1 pr-2" style={{ minWidth: '100px' }}>字段描述</th>
+          <th className="text-left py-1 pr-2" style={{ width: '150px' }}>映射到我方接口</th>
+          <th className="text-left py-1 pr-2" style={{ width: '130px' }}>映射到字段</th>
+          <th className="text-left py-1" style={{ width: '44px' }}>状态</th>
         </tr>
       </thead>
       <tbody>
-        {params.map((pb) => {
+        {params.map((pb, i) => {
           const m = getMapping(pb.name, paramType)
           const selectedApiIdx = m?.ourApiIdx ?? -1
           const selectedApi = apisA[selectedApiIdx]
           const fields = fieldsFromApi(selectedApi)
+          const indent = pb._depth || 0
 
           return (
-            <tr key={pb.name} className="border-b border-green-100">
-              <td className="py-1 pr-2 font-mono text-green-700 align-top">{pb.name}</td>
+            <tr key={`${pb.name}-${i}`} className="border-b border-green-100">
+              <td className="py-1 pr-2 font-mono text-green-700 align-top" style={{ paddingLeft: 4 + indent * 14 }}>
+                {indent > 0 && <span className="text-purple-300 mr-1">{'└ '.repeat(indent)}</span>}
+                {pb.name}
+              </td>
               <td className="py-1 pr-2 text-gray-500 align-top">{pb.type}</td>
               {paramType === 'input' && (
                 <td className="py-1 pr-2 text-center align-top">
                   {pb.required ? <span className="text-red-500">是</span> : <span className="text-gray-300">否</span>}
                 </td>
               )}
-              <td className="py-1 pr-2 text-gray-500 align-top break-words max-w-[150px]">{pb.description || '—'}</td>
+              <td className="py-1 pr-2 text-gray-500 align-top break-words" style={{ maxWidth: '150px' }}>{pb.description || '—'}</td>
               <td className="py-1 pr-2 align-top">
                 <select
                   value={selectedApiIdx}
                   onChange={(e) => {
                     const apiIdx = parseInt(e.target.value)
-                    if (apiIdx >= 0) {
-                      setMapping(pb.name, paramType, apiIdx, '', 'matched')
-                    } else if (e.target.value === '__missing') {
-                      setMapping(pb.name, paramType, -1, '', 'missing')
-                    } else {
-                      setMapping(pb.name, paramType, -1, '', 'unset')
-                    }
+                    if (apiIdx >= 0) setMapping(pb.name, paramType, apiIdx, '', 'matched')
+                    else if (e.target.value === '__missing') setMapping(pb.name, paramType, -1, '', 'missing')
+                    else setMapping(pb.name, paramType, -1, '', 'unset')
                   }}
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
                 >
@@ -205,9 +226,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                   value={m?.ourParam || ''}
                   onChange={(e) => {
                     const val = e.target.value
-                    if (val && selectedApiIdx >= 0) {
-                      setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
-                    }
+                    if (val && selectedApiIdx >= 0) setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
                   }}
                   disabled={selectedApiIdx < 0}
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
@@ -236,16 +255,16 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
   return (
     <div className="ml-2 mt-2 mb-3 p-3 bg-green-50 rounded border border-green-200 text-xs">
       <div className="text-gray-500 mb-2 font-mono">{clientApi.method} {clientApi.url}</div>
-      {inputParams.length > 0 && (
+      {flatInput.length > 0 && (
         <>
-          <div className="text-gray-500 font-medium mb-1">输入参数 ({inputParams.length})</div>
-          {renderTable(inputParams, 'input', (api) => api?.inputParams || [])}
+          <div className="text-gray-500 font-medium mb-1">输入参数 ({flatInput.length})</div>
+          {renderTable(flatInput, 'input', (api) => api?.inputParams || [])}
         </>
       )}
-      {outputParams.length > 0 && (
+      {flatOutput.length > 0 && (
         <>
-          <div className="text-gray-500 font-medium mb-1 mt-2">输出参数 ({outputParams.length})</div>
-          {renderTable(outputParams, 'output', (api) => api?.outputParams || [])}
+          <div className="text-gray-500 font-medium mb-1 mt-2">输出参数 ({flatOutput.length})</div>
+          {renderTable(flatOutput, 'output', (api) => api?.outputParams || [])}
         </>
       )}
     </div>
