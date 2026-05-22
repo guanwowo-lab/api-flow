@@ -8,8 +8,6 @@ export default function ApiLibrary() {
   const folders = state.apiFolders || []
   const [selectedId, setSelectedId] = useState(null)
   const [newName, setNewName] = useState('')
-  const [draftApis, setDraftApis] = useState([])
-  const [dirty, setDirty] = useState(false)
 
   useEffect(() => {
     db.apiFolders.toArray().then((all) => {
@@ -22,25 +20,6 @@ export default function ApiLibrary() {
     })
   }, [])
 
-  // 切换文件夹时直接从 DB 读取，确保数据最新
-  useEffect(() => {
-    if (!selectedId) {
-      setDraftApis([])
-      return
-    }
-    let cancelled = false
-    db.apiFolders.get(selectedId).then((folder) => {
-      if (cancelled) return
-      if (folder) {
-        setDraftApis((folder.apis || []).map((a) => ({ ...a, children: a.children || [] })))
-        setDirty(false)
-      }
-    })
-    return () => { cancelled = true }
-  }, [selectedId])
-
-  const selected = folders.find((f) => f.id === selectedId)
-
   const handleCreateFolder = async () => {
     const name = newName.trim()
     if (!name) return
@@ -52,30 +31,6 @@ export default function ApiLibrary() {
   const handleDeleteFolder = async (id) => {
     await deleteApiFolder(id)
     if (selectedId === id) setSelectedId(null)
-  }
-
-  const updateApi = (idx, updated) => {
-    setDraftApis((prev) => prev.map((a, i) => (i === idx ? updated : a)))
-    setDirty(true)
-  }
-
-  const deleteApi = (idx) => {
-    setDraftApis((prev) => prev.filter((_, i) => i !== idx))
-    setDirty(true)
-  }
-
-  const addApi = () => {
-    const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
-    setDraftApis((prev) => [...prev, newApi])
-    setDirty(true)
-  }
-
-  const handleSaveFolder = async () => {
-    if (!selectedId) return
-    const folder = await db.apiFolders.get(selectedId)
-    if (!folder) return
-    await saveApiFolder({ ...folder, apis: draftApis })
-    setDirty(false)
   }
 
   return (
@@ -138,50 +93,116 @@ export default function ApiLibrary() {
           </div>
         </div>
 
-        <div className="flex-1">
-          {!selectedId ? (
-            <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
-              <p>选择一个文件夹查看其接口</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-medium">{selected?.name || '加载中...'} — 接口列表</h2>
-                <div className="flex gap-2">
-                  <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-                    + 添加接口
-                  </button>
-                  <button
-                    onClick={handleSaveFolder}
-                    disabled={!dirty}
-                    className={`px-3 py-1.5 rounded text-sm ${dirty ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
-                  >
-                    {dirty ? '● 保存文件夹' : '已保存 ✓'}
-                  </button>
-                </div>
-              </div>
+        <FolderDetail key={selectedId || '_empty'} folderId={selectedId} />
+      </div>
+    </div>
+  )
+}
 
-              {draftApis.length === 0 ? (
-                <div className="text-center py-16 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
-                  <p>该文件夹下暂无接口</p>
-                  <p className="text-xs mt-1">点击"+ 添加接口"开始录入</p>
-                </div>
-              ) : (
-                <div className="space-y-1 max-h-[65vh] overflow-y-auto">
-                  {draftApis.map((api, i) => (
-                    <ApiEditor
-                      key={i}
-                      api={api}
-                      onSave={(updated) => updateApi(i, updated)}
-                      onDelete={() => deleteApi(i)}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+function FolderDetail({ folderId }) {
+  const { saveApiFolder } = useProject()
+  const [draftApis, setDraftApis] = useState([])
+  const [folderName, setFolderName] = useState('')
+  const [dirty, setDirty] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!folderId) {
+      setDraftApis([])
+      setFolderName('')
+      return
+    }
+    setLoading(true)
+    db.apiFolders.get(folderId).then((folder) => {
+      if (folder) {
+        setDraftApis((folder.apis || []).map((a) => ({ ...a, children: a.children || [] })))
+        setFolderName(folder.name)
+      } else {
+        setDraftApis([])
+        setFolderName('')
+      }
+      setLoading(false)
+      setDirty(false)
+    })
+  }, [folderId])
+
+  const updateApi = (idx, updated) => {
+    setDraftApis((prev) => prev.map((a, i) => (i === idx ? updated : a)))
+    setDirty(true)
+  }
+
+  const deleteApi = (idx) => {
+    setDraftApis((prev) => prev.filter((_, i) => i !== idx))
+    setDirty(true)
+  }
+
+  const addApi = () => {
+    const newApi = { name: '', url: '', method: 'POST', inputParams: [], outputParams: [] }
+    setDraftApis((prev) => [...prev, newApi])
+    setDirty(true)
+  }
+
+  const handleSave = async () => {
+    if (!folderId) return
+    const folder = await db.apiFolders.get(folderId)
+    if (!folder) return
+    await saveApiFolder({ ...folder, apis: draftApis })
+    setDirty(false)
+  }
+
+  if (!folderId) {
+    return (
+      <div className="flex-1">
+        <div className="text-center py-20 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
+          <p>选择一个文件夹查看其接口</p>
         </div>
       </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex-1">
+        <div className="text-center py-20 text-gray-400 bg-white rounded-lg">加载中...</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-medium">{folderName} — 接口列表</h2>
+        <div className="flex gap-2">
+          <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+            + 添加接口
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!dirty}
+            className={`px-3 py-1.5 rounded text-sm ${dirty ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
+          >
+            {dirty ? '● 保存文件夹' : '已保存 ✓'}
+          </button>
+        </div>
+      </div>
+
+      {draftApis.length === 0 ? (
+        <div className="text-center py-16 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
+          <p>该文件夹下暂无接口</p>
+          <p className="text-xs mt-1">点击"+ 添加接口"开始录入</p>
+        </div>
+      ) : (
+        <div className="space-y-1 max-h-[65vh] overflow-y-auto">
+          {draftApis.map((api, i) => (
+            <ApiEditor
+              key={i}
+              api={api}
+              onSave={(updated) => updateApi(i, updated)}
+              onDelete={() => deleteApi(i)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
