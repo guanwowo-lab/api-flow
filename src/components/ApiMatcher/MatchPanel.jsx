@@ -200,35 +200,62 @@ function ApiDetail({ api }) {
   const outputParams = api.outputParams || []
 
   return (
-    <div className="ml-4 mt-1 mb-2 p-2 bg-gray-50 rounded border border-gray-200 text-xs">
+    <div className="ml-2 mt-1 mb-2 p-2 bg-gray-50 rounded border border-gray-200 text-xs overflow-x-auto">
       {api.url && (
-        <div className="text-gray-500 font-mono mb-1">{api.method} {api.url}</div>
+        <div className="text-gray-500 font-mono mb-2">{api.method} {api.url}</div>
       )}
       {inputParams.length > 0 && (
-        <div className="mb-1">
-          <div className="text-gray-400 mb-0.5">输入参数 ({inputParams.length})：</div>
-          {inputParams.map((p, i) => (
-            <div key={i} className="ml-3 py-0.5 flex gap-2">
-              <span className="font-mono text-blue-600">{p.name}</span>
-              <span className="text-gray-400">{p.type}</span>
-              {p.required && <span className="text-red-400 text-[10px]">必填</span>}
-              <span className="text-gray-500">{p.description}</span>
-              {p.remark && <span className="text-gray-300 text-[10px]">{p.remark}</span>}
-            </div>
-          ))}
+        <div className="mb-2">
+          <div className="text-gray-400 mb-1 font-medium">输入参数 ({inputParams.length})</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-gray-400 border-b border-gray-200">
+                <th className="text-left py-1 pr-2 w-[100px]">字段名称</th>
+                <th className="text-left py-1 pr-2 w-[80px]">数据类型</th>
+                <th className="text-center py-1 pr-2 w-[44px]">必传</th>
+                <th className="text-left py-1 pr-2 min-w-[120px]">字段描述</th>
+                <th className="text-left py-1">备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inputParams.map((p, i) => (
+                <tr key={i} className="border-b border-gray-100">
+                  <td className="py-1 pr-2 font-mono text-blue-700 align-top">{p.name || '—'}</td>
+                  <td className="py-1 pr-2 text-gray-500 align-top">{p.type || '—'}</td>
+                  <td className="py-1 pr-2 text-center align-top">
+                    {p.required ? <span className="text-red-500">是</span> : <span className="text-gray-300">否</span>}
+                  </td>
+                  <td className="py-1 pr-2 text-gray-600 align-top break-words">{p.description || '—'}</td>
+                  <td className="py-1 text-gray-400 align-top break-words max-w-[200px]">{p.remark || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       {outputParams.length > 0 && (
         <div>
-          <div className="text-gray-400 mb-0.5">输出参数 ({outputParams.length})：</div>
-          {outputParams.map((p, i) => (
-            <div key={i} className="ml-3 py-0.5 flex gap-2">
-              <span className="font-mono text-green-600">{p.name}</span>
-              <span className="text-gray-400">{p.type}</span>
-              <span className="text-gray-500">{p.description}</span>
-              {p.remark && <span className="text-gray-300 text-[10px]">{p.remark}</span>}
-            </div>
-          ))}
+          <div className="text-gray-400 mb-1 font-medium">输出参数 ({outputParams.length})</div>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-gray-400 border-b border-gray-200">
+                <th className="text-left py-1 pr-2 w-[100px]">字段名称</th>
+                <th className="text-left py-1 pr-2 w-[80px]">数据类型</th>
+                <th className="text-left py-1 pr-2 min-w-[120px]">字段描述</th>
+                <th className="text-left py-1">备注</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outputParams.map((p, i) => (
+                <tr key={i} className="border-b border-gray-100">
+                  <td className="py-1 pr-2 font-mono text-green-700 align-top">{p.name || '—'}</td>
+                  <td className="py-1 pr-2 text-gray-500 align-top">{p.type || '—'}</td>
+                  <td className="py-1 pr-2 text-gray-600 align-top break-words">{p.description || '—'}</td>
+                  <td className="py-1 text-gray-400 align-top break-words max-w-[200px]">{p.remark || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       {inputParams.length === 0 && outputParams.length === 0 && (
