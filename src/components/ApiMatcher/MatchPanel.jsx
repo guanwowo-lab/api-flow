@@ -33,19 +33,23 @@ export default function MatchPanel() {
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
   }
 
-  const updateRemark = (clientIdx, paramKey, paramType, remark) => {
-    const list = mappings[clientIdx] || []
-    const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
-    let updated
-    if (exists) {
-      updated = list.map((m) =>
-        m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
-      )
-    } else {
-      updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
-    }
-    setMappings((prev) => ({ ...prev, [clientIdx]: updated }))
-    setDirtyClients((prev) => new Set(prev).add(clientIdx))
+  const updateRemark = async (clientIdx, paramKey, paramType, remark) => {
+    setMappings((prev) => {
+      const list = prev[clientIdx] || []
+      const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
+      let updated
+      if (exists) {
+        updated = list.map((m) =>
+          m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
+        )
+      } else {
+        updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
+      }
+      const newMappings = { ...prev, [clientIdx]: updated }
+      // 自动保存备注到数据库
+      saveMatches(state.project.id, { mappings: newMappings })
+      return newMappings
+    })
   }
 
   const clearMappings = (clientIdx) => {
