@@ -231,9 +231,10 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 <select
                   value={selectedApiIdx}
                   onChange={(e) => {
-                    const apiIdx = parseInt(e.target.value)
+                    const val = e.target.value
+                    const apiIdx = parseInt(val)
                     if (apiIdx >= 0) setMapping(pb.name, paramType, apiIdx, '', 'matched')
-                    else if (e.target.value === '__missing') setMapping(pb.name, paramType, -1, '', 'missing')
+                    else if (val === '__missing') setMapping(pb.name, paramType, -1, '', 'missing')
                     else setMapping(pb.name, paramType, -1, '', 'unset')
                   }}
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
@@ -250,7 +251,8 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                   value={m?.ourParam || ''}
                   onChange={(e) => {
                     const val = e.target.value
-                    if (val && selectedApiIdx >= 0) setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
+                    if (val === '') setMapping(pb.name, paramType, -1, '', 'unset')
+                    else if (val && selectedApiIdx >= 0) setMapping(pb.name, paramType, selectedApiIdx, val, 'matched')
                   }}
                   disabled={selectedApiIdx < 0}
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
