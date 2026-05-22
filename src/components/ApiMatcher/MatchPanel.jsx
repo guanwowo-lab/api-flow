@@ -103,13 +103,20 @@ export default function MatchPanel() {
                 </button>
                 {isOpen && (
                   <>
-                    <div className="ml-2 mt-1 mb-1">
+                    <div className="ml-2 mt-1 mb-1 flex items-center gap-3">
                       <button
                         onClick={() => { if (confirm('确定清除该接口的所有匹配记录？')) clearMappings(i) }}
                         className="text-xs text-red-400 hover:text-red-600"
                       >
                         清除该接口匹配
                       </button>
+                      <BulkMapApi
+                        clientIdx={i}
+                        apisA={apisA}
+                        inputParams={api.inputParams || []}
+                        outputParams={api.outputParams || []}
+                        setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
+                      />
                     </div>
                     <ClientParamMapping
                       clientApi={api}
@@ -314,6 +321,45 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
           {renderTable(flatOutput, 'output', (api) => flattenParams(api?.outputParams || []))}
         </>
       )}
+    </div>
+  )
+}
+
+function BulkMapApi({ clientIdx, apisA, inputParams, outputParams, setMapping }) {
+  const [selectedApi, setSelectedApi] = useState(-1)
+
+  const allParams = [
+    ...flattenParams(inputParams || []).map((p) => ({ ...p, paramType: 'input' })),
+    ...flattenParams(outputParams || []).map((p) => ({ ...p, paramType: 'output' })),
+  ]
+
+  const handleBulkMap = () => {
+    if (selectedApi < 0) return
+    for (const p of allParams) {
+      setMapping(p.name, p.paramType, selectedApi, '', 'matched')
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      <span className="text-gray-400">统一映射到：</span>
+      <select
+        value={selectedApi}
+        onChange={(e) => setSelectedApi(parseInt(e.target.value))}
+        className="px-1.5 py-0.5 border border-gray-200 rounded text-xs outline-none"
+      >
+        <option value={-1}>-- 选择接口 --</option>
+        {apisA.map((a, ai) => (
+          <option key={ai} value={ai}>{a.name || `接口${ai + 1}`}</option>
+        ))}
+      </select>
+      <button
+        onClick={handleBulkMap}
+        disabled={selectedApi < 0}
+        className="px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+      >
+        应用
+      </button>
     </div>
   )
 }
