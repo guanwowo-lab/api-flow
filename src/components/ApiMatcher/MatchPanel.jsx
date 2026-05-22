@@ -84,14 +84,14 @@ export default function MatchPanel() {
 
       <div className="flex gap-6 mb-6">
         <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[70vh] overflow-y-auto">
-          <h2 className="font-medium mb-3 text-blue-600">我方 API</h2>
-          {apisA.map((api, i) => {
-            const isOpen = expandedApi?.side === 'A' && expandedApi?.index === i
+          <h2 className="font-medium mb-3 text-green-600">客户 API</h2>
+          {apisB.map((api, i) => {
+            const isOpen = expandedApi?.side === 'B' && expandedApi?.index === i
             return (
               <div key={i}>
                 <button
-                  onClick={() => setExpandedApi(isOpen ? null : { side: 'A', index: i })}
-                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-blue-50 ${isOpen ? 'bg-blue-50 font-medium' : ''}`}
+                  onClick={() => setExpandedApi(isOpen ? null : { side: 'B', index: i })}
+                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-green-50 ${isOpen ? 'bg-green-50 font-medium' : ''}`}
                 >
                   <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
                   {api.name || api.url || `接口 #${i + 1}`}
@@ -103,14 +103,14 @@ export default function MatchPanel() {
         </div>
 
         <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4 max-h-[70vh] overflow-y-auto">
-          <h2 className="font-medium mb-3 text-green-600">客户 API</h2>
-          {apisB.map((api, i) => {
-            const isOpen = expandedApi?.side === 'B' && expandedApi?.index === i
+          <h2 className="font-medium mb-3 text-blue-600">我方 API</h2>
+          {apisA.map((api, i) => {
+            const isOpen = expandedApi?.side === 'A' && expandedApi?.index === i
             return (
               <div key={i}>
                 <button
-                  onClick={() => setExpandedApi(isOpen ? null : { side: 'B', index: i })}
-                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-green-50 ${isOpen ? 'bg-green-50 font-medium' : ''}`}
+                  onClick={() => setExpandedApi(isOpen ? null : { side: 'A', index: i })}
+                  className={`w-full text-left text-sm py-1 px-2 rounded hover:bg-blue-50 ${isOpen ? 'bg-blue-50 font-medium' : ''}`}
                 >
                   <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
                   {api.name || api.url || `接口 #${i + 1}`}
@@ -139,19 +139,6 @@ export default function MatchPanel() {
                 className={`flex items-center gap-3 p-3 rounded-lg border ${pair.confirmed ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`}
               >
               <select
-                value={pair.apiAIndex}
-                onChange={(e) => updatePair(i, 'apiAIndex', parseInt(e.target.value))}
-                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm outline-none"
-              >
-                <option value={-1}>-- 选择我方接口 --</option>
-                {apisA.map((a, ai) => (
-                  <option key={ai} value={ai}>{a.name || a.url || `#${ai + 1}`}</option>
-                ))}
-              </select>
-
-              <span className="text-gray-300">&harr;</span>
-
-              <select
                 value={pair.apiBIndex}
                 onChange={(e) => updatePair(i, 'apiBIndex', parseInt(e.target.value))}
                 className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm outline-none"
@@ -159,6 +146,19 @@ export default function MatchPanel() {
                 <option value={-1}>-- 选择客户接口 --</option>
                 {apisB.map((b, bi) => (
                   <option key={bi} value={bi}>{b.name || b.url || `#${bi + 1}`}</option>
+                ))}
+              </select>
+
+              <span className="text-gray-300">&harr;</span>
+
+              <select
+                value={pair.apiAIndex}
+                onChange={(e) => updatePair(i, 'apiAIndex', parseInt(e.target.value))}
+                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm outline-none"
+              >
+                <option value={-1}>-- 选择我方接口 --</option>
+                {apisA.map((a, ai) => (
+                  <option key={ai} value={ai}>{a.name || a.url || `#${ai + 1}`}</option>
                 ))}
               </select>
 
@@ -188,15 +188,20 @@ export default function MatchPanel() {
                 {(() => {
                   const mappings = pair.paramMappings || []
                   const matched = mappings.filter((m) => m.status === 'matched').length
-                  const missing = mappings.filter((m) => m.status === 'missing').length
+                  const markedMissing = mappings.filter((m) => m.status === 'missing').length
                   const total = (apisB[pair.apiBIndex]?.inputParams || []).length
+                  const missing = total - matched
                   return (
                     <span className="text-xs text-gray-400 ml-2">
-                      {matched > 0 && <span className="text-green-600">{matched} 已匹配</span>}
-                      {matched > 0 && missing > 0 && <span className="text-gray-300"> | </span>}
-                      {missing > 0 && <span className="text-red-500">{missing} 缺失</span>}
-                      {(matched > 0 || missing > 0) && <span className="text-gray-300"> | </span>}
-                      <span className="text-gray-400">共 {total} 参数</span>
+                      <span className="text-green-600">{matched} 已匹配</span>
+                      <span className="text-gray-300"> | </span>
+                      {missing > 0 ? (
+                        <span className="text-red-500">{missing} 未匹配</span>
+                      ) : (
+                        <span className="text-green-600">全部匹配</span>
+                      )}
+                      <span className="text-gray-300"> | </span>
+                      <span>共 {total} 参数</span>
                     </span>
                   )
                 })()}
