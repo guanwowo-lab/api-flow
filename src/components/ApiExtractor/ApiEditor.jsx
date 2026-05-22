@@ -167,6 +167,23 @@ export default function ApiEditor({ api, onSave, onDelete }) {
     setScanResult({ ...scanResult, rows: newRows })
   }
 
+  const editCell = (rowIdx, colIdx, value) => {
+    if (!scanResult) return
+    const newRows = scanResult.rows.map((r, i) => {
+      if (i !== rowIdx) return r
+      const cells = [...r.cells]
+      cells[colIdx] = value
+      return { ...r, cells }
+    })
+    setScanResult({ ...scanResult, rows: newRows })
+  }
+
+  const deleteScanRow = (rowIdx) => {
+    if (!scanResult) return
+    const newRows = scanResult.rows.filter((_, i) => i !== rowIdx)
+    setScanResult({ ...scanResult, rows: newRows })
+  }
+
   const confirmImport = () => {
     if (!scanResult || !scannerOpen) return
     const { rows, mapping } = scanResult
@@ -272,6 +289,8 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             onDoScan={doScan}
             onChangeMapping={changeMapping}
             onAdjustLevel={adjustLevel}
+            onEditCell={editCell}
+            onDeleteRow={deleteScanRow}
             onConfirmImport={confirmImport}
             onCancelScan={() => { setScanResult(null); setPasteText(''); }}
           />
@@ -297,6 +316,8 @@ export default function ApiEditor({ api, onSave, onDelete }) {
             onDoScan={doScan}
             onChangeMapping={changeMapping}
             onAdjustLevel={adjustLevel}
+            onEditCell={editCell}
+            onDeleteRow={deleteScanRow}
             onConfirmImport={confirmImport}
             onCancelScan={() => { setScanResult(null); setPasteText(''); }}
           />
@@ -312,7 +333,7 @@ function ParamGroup({
   path, title, hasRequired, params, depth,
   expandedPaths, onTogglePath, onParamChange, onAddParam, onRemoveParam, onRemoveAllParams,
   isScanning, scanResult, onOpenScanner, onCloseScanner, onPasteText, pasteText,
-  onDoScan, onChangeMapping, onAdjustLevel, onConfirmImport, onCancelScan,
+  onDoScan, onChangeMapping, onAdjustLevel, onEditCell, onDeleteRow, onConfirmImport, onCancelScan,
 }) {
   const indent = depth * 16
   const borderColor = depth === 0 ? 'border-blue-200' : depth === 1 ? 'border-green-200' : 'border-orange-200'
@@ -365,6 +386,8 @@ function ParamGroup({
               hasRequired={hasRequired}
               onChangeMapping={onChangeMapping}
               onAdjustLevel={onAdjustLevel}
+              onEditCell={onEditCell}
+              onDeleteRow={onDeleteRow}
               onConfirm={onConfirmImport}
               onCancel={onCancelScan}
             />
@@ -422,6 +445,8 @@ function ParamGroup({
                 onDoScan={onDoScan}
                 onChangeMapping={onChangeMapping}
                 onAdjustLevel={onAdjustLevel}
+                onEditCell={onEditCell}
+                onDeleteRow={onDeleteRow}
                 onConfirmImport={onConfirmImport}
                 onCancelScan={onCancelScan}
               />
@@ -674,7 +699,7 @@ function scoreRemark(values) {
 
 // ---- 扫描预览组件 ----
 
-function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, onConfirm, onCancel }) {
+function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, onEditCell, onDeleteRow, onConfirm, onCancel }) {
   const { headers, rows, mapping } = scanResult
   const fields = hasRequired
     ? ['name', 'type', 'required', 'description', 'remark']
@@ -720,6 +745,7 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, 
                   {fieldLabels[mapping[c]] || `列${parseInt(c) + 1}`}
                 </th>
               ))}
+              <th className="border border-purple-200 px-1 py-1 w-8"></th>
             </tr>
           </thead>
           <tbody>
@@ -747,18 +773,29 @@ function ScanPreview({ scanResult, hasRequired, onChangeMapping, onAdjustLevel, 
                   </div>
                 </td>
                 {Object.keys(mapping).map((c) => (
-                  <td key={c}
-                    className={`border border-gray-200 px-2 py-1 ${mapping[c] === 'skip' ? 'text-gray-300 italic' : ''}`}
-                    style={{ paddingLeft: row.level > 0 ? 8 + row.level * 14 : 6 }}
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      {mapping[c] !== 'skip' && c === Object.keys(mapping)[0] && row.level > 0 && (
-                        <span className="text-purple-300 shrink-0">{'└ '.repeat(row.level)}</span>
-                      )}
-                      {row.cells[parseInt(c)] || <span className="text-gray-300">—</span>}
-                    </span>
+                  <td key={c} className="border border-gray-200 px-1 py-0.5">
+                    {mapping[c] !== 'skip' ? (
+                      <input
+                        type="text"
+                        value={row.cells[parseInt(c)] || ''}
+                        onChange={(e) => onEditCell(ri, parseInt(c), e.target.value)}
+                        className="w-full px-1.5 py-0.5 text-xs outline-none bg-transparent focus:bg-white focus:ring-1 focus:ring-blue-400 rounded border border-transparent focus:border-blue-300"
+                        style={{ minWidth: c === '0' && row.level > 0 ? 40 + row.level * 14 : 60 }}
+                        placeholder="—"
+                      />
+                    ) : (
+                      <span className="text-gray-300 italic px-1.5">{row.cells[parseInt(c)] || '—'}</span>
+                    )}
                   </td>
                 ))}
+                <td className="border border-gray-200 px-1 py-0.5 text-center">
+                  <button
+                    type="button"
+                    onClick={() => onDeleteRow(ri)}
+                    className="text-gray-400 hover:text-red-500 text-sm"
+                    title="删除此行"
+                  >🗑</button>
+                </td>
               </tr>
             ))}
           </tbody>
