@@ -5,29 +5,6 @@ export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
 
   useEffect(() => { loadApiFolders() }, [])
-
-  // 迁移清理：删除 key 格式不匹配的旧映射数据
-  useEffect(() => {
-    if (apisB.length === 0) return
-    let cleaned = false
-    const newMappings = { ...mappings }
-    for (let i = 0; i < apisB.length; i++) {
-      const list = mappings[i]
-      if (!list || list.length === 0) continue
-      const flatIn = flattenParams(apisB[i]?.inputParams || [])
-      const flatOut = flattenParams(apisB[i]?.outputParams || [])
-      const validKeys = new Set([...flatIn.map(p => p._key), ...flatOut.map(p => p._key)])
-      const filtered = list.filter((m) => validKeys.has(m.clientParam))
-      if (filtered.length !== list.length) {
-        newMappings[i] = filtered
-        cleaned = true
-      }
-    }
-    if (cleaned) {
-      setMappings(newMappings)
-      saveMatches(state.project.id, { mappings: newMappings })
-    }
-  }, [apisB])
   const apisB = state.extractB?.apis || []
   // 我方 API 直接从库中读取，保证参数是最新最全的
   const folders = state.apiFolders || []
@@ -61,8 +38,17 @@ export default function MatchPanel() {
     await saveMatches(state.project.id, { mappings: updated })
   }
 
+  const validKeys = (clientIdx) => {
+    const api = apisB[clientIdx]
+    if (!api) return new Set()
+    return new Set([
+      ...flattenParams(api.inputParams || []).map((p) => p._key),
+      ...flattenParams(api.outputParams || []).map((p) => p._key),
+    ])
+  }
+
   const getMatchStats = (clientIdx) => {
-    const list = mappings[clientIdx] || []
+    const list = (mappings[clientIdx] || []).filter((m) => validKeys(clientIdx).has(m.clientParam))
     const api = apisB[clientIdx]
     const flatIn = flattenParams(api?.inputParams || [])
     const flatOut = flattenParams(api?.outputParams || [])
@@ -72,7 +58,10 @@ export default function MatchPanel() {
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
-  const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched' && m.ourParam).length, 0)
+  const totalMatched = apisB.reduce((sum, _, i) => {
+    const valid = validKeys(i)
+    return sum + (mappings[i] || []).filter((m) => m.status === 'matched' && m.ourParam && valid.has(m.clientParam)).length
+  }, 0)
   const totalParams = apisB.reduce((sum, api) => {
     return sum + flattenParams(api.inputParams || []).length + flattenParams(api.outputParams || []).length
   }, 0)
