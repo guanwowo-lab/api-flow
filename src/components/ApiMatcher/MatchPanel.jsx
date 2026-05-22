@@ -185,6 +185,21 @@ export default function MatchPanel() {
                 >
                   {expandedMapping === i ? '收起参数映射' : '展开参数映射'}
                 </button>
+                {(() => {
+                  const mappings = pair.paramMappings || []
+                  const matched = mappings.filter((m) => m.status === 'matched').length
+                  const missing = mappings.filter((m) => m.status === 'missing').length
+                  const total = (apisB[pair.apiBIndex]?.inputParams || []).length
+                  return (
+                    <span className="text-xs text-gray-400 ml-2">
+                      {matched > 0 && <span className="text-green-600">{matched} 已匹配</span>}
+                      {matched > 0 && missing > 0 && <span className="text-gray-300"> | </span>}
+                      {missing > 0 && <span className="text-red-500">{missing} 缺失</span>}
+                      {(matched > 0 || missing > 0) && <span className="text-gray-300"> | </span>}
+                      <span className="text-gray-400">共 {total} 参数</span>
+                    </span>
+                  )
+                })()}
                 {expandedMapping === i && (
                   <ParamMapping
                     pair={pair}
