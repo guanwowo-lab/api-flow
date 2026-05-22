@@ -22,15 +22,18 @@ export default function ApiLibrary() {
     })
   }, [])
 
-  // 切换文件夹时加载对应 APIs 到本地状态
+  // 切换文件夹时直接从 DB 读取，确保数据最新
   useEffect(() => {
-    const folder = folders.find((f) => f.id === selectedId)
-    if (folder) {
-      setDraftApis([...(folder.apis || [])].map((a) => ({ ...a, children: a.children || [] })))
-      setDirty(false)
-    } else if (!selectedId) {
+    if (!selectedId) {
       setDraftApis([])
+      return
     }
+    db.apiFolders.get(selectedId).then((folder) => {
+      if (folder) {
+        setDraftApis((folder.apis || []).map((a) => ({ ...a, children: a.children || [] })))
+        setDirty(false)
+      }
+    })
   }, [selectedId])
 
   const selected = folders.find((f) => f.id === selectedId)
