@@ -12,7 +12,8 @@ export default function MatchPanel() {
     [apisA, apisB]
   )
 
-  const [expandedApi, setExpandedApi] = useState(null) // { side: 'A'|'B', index: number }
+  const [expandedApi, setExpandedApi] = useState(null)
+  const [expandedMapping, setExpandedMapping] = useState(null) // pair index
 
   const [pairs, setPairs] = useState(() => {
     if (state.matches?.pairs) return state.matches.pairs
@@ -133,10 +134,10 @@ export default function MatchPanel() {
           const apiA = apisA[pair.apiAIndex]
           const apiB = apisB[pair.apiBIndex]
           return (
-            <div
-              key={i}
-              className={`flex items-center gap-3 p-3 rounded-lg border ${pair.confirmed ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`}
-            >
+            <div key={i}>
+              <div
+                className={`flex items-center gap-3 p-3 rounded-lg border ${pair.confirmed ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200'}`}
+              >
               <select
                 value={pair.apiAIndex}
                 onChange={(e) => updatePair(i, 'apiAIndex', parseInt(e.target.value))}
@@ -176,6 +177,26 @@ export default function MatchPanel() {
 
               <button onClick={() => deletePair(i)} className="text-red-400 hover:text-red-600 text-sm">&times;</button>
             </div>
+            {pair.confirmed && (
+              <div className="mt-2 pl-2 border-l-2 border-green-300">
+                <button
+                  onClick={() => setExpandedMapping(expandedMapping === i ? null : i)}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  {expandedMapping === i ? '收起参数映射' : '展开参数映射'}
+                </button>
+                {expandedMapping === i && (
+                  <ParamMapping
+                    pair={pair}
+                    pairIndex={i}
+                    apisA={apisA}
+                    apisB={apisB}
+                    onChange={(mappings) => updatePair(i, 'paramMappings', mappings)}
+                  />
+                )}
+              </div>
+            )}
+          </div>
           )
         })}
       </div>
@@ -263,4 +284,123 @@ function ApiDetail({ api }) {
       )}
     </div>
   )
+}
+
+// ---- 参数级映射 ----
+
+function ParamMapping({ pair, pairIndex, apisA, apisB, onChange }) {
+  const apiA = apisA[pair.apiAIndex]
+  const apiB = apisB[pair.apiBIndex]
+  const inputB = apiB?.inputParams || []
+  const inputA = apiA?.inputParams || []
+  const mappings = pair.paramMappings || []
+
+  const getMapping = (paramBName) => mappings.find((m) => m.paramB === paramBName)
+
+  const setMapping = (paramBName, paramAName, status) => {
+    const updated = mappings.filter((m) => m.paramB !== paramBName)
+    if (status !== 'unset') {
+      updated.push({ paramB: paramBName, paramA: paramAName, status })
+    }
+    onChange(updated)
+  }
+
+  const autoSuggest = (paramBName) => {
+    const bLower = paramBName.toLowerCase()
+    return inputA
+      .map((a) => ({ name: a.name, score: similarity(bLower, (a.name || '').toLowerCase()) }))
+      .filter((c) => c.score > 0.4)
+      .sort((a, b) => b.score - a.score)
+  }
+
+  if (!apiA || !apiB) return <div className="text-xs text-gray-400 mt-2">请先选择双方接口</div>
+  if (inputB.length === 0) return <div className="text-xs text-gray-400 mt-2">客户接口无输入参数</div>
+
+  const matchedCount = mappings.filter((m) => m.status === 'matched').length
+  const missingCount = mappings.filter((m) => m.status === 'missing').length
+
+  return (
+    <div className="mt-2 p-3 bg-white rounded border border-gray-200 text-xs">
+      <div className="flex items-center gap-4 mb-2">
+        <span className="font-medium text-gray-600">参数映射</span>
+        <span className="text-green-600">已匹配 {matchedCount}</span>
+        {missingCount > 0 && <span className="text-red-500">缺失 {missingCount}</span>}
+        <span className="text-gray-300">|</span>
+        <span className="text-gray-400">{apiB.name || '未命名'} → {apiA.name || '未命名'}</span>
+      </div>
+
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-gray-400 border-b border-gray-200">
+            <th className="text-left py-1 pr-2 w-[100px]">客户字段</th>
+            <th className="text-left py-1 pr-2 w-[80px]">类型</th>
+            <th className="text-left py-1 pr-2 w-[44px]">必传</th>
+            <th className="text-left py-1 pr-2 min-w-[120px]">映射到我方字段</th>
+            <th className="text-left py-1 w-[60px]">状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          {inputB.map((pb) => {
+            const mapping = getMapping(pb.name)
+            const suggestions = autoSuggest(pb.name)
+            const status = mapping?.status || 'unset'
+
+            return (
+              <tr key={pb.name} className="border-b border-gray-100">
+                <td className="py-1 pr-2 font-mono text-blue-700 align-top">{pb.name}</td>
+                <td className="py-1 pr-2 text-gray-500 align-top">{pb.type}</td>
+                <td className="py-1 pr-2 text-center align-top">
+                  {pb.required ? <span className="text-red-500">是</span> : <span className="text-gray-300">否</span>}
+                </td>
+                <td className="py-1 pr-2 align-top">
+                  <select
+                    value={mapping?.paramA || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '__missing') setMapping(pb.name, '', 'missing')
+                      else if (val === '') setMapping(pb.name, '', 'unset')
+                      else setMapping(pb.name, val, 'matched')
+                    }}
+                    className="w-full px-1.5 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
+                  >
+                    <option value="">-- 选择 --</option>
+                    {inputA.map((pa) => (
+                      <option key={pa.name} value={pa.name}>
+                        {pa.name} ({pa.type})
+                      </option>
+                    ))}
+                    <option value="__missing" className="text-red-500">标记为缺失</option>
+                  </select>
+                  {suggestions.length > 0 && !mapping && (
+                    <div className="text-[10px] text-purple-400 mt-0.5">
+                      建议：{suggestions.slice(0, 2).map((s) => s.name).join(', ')}
+                    </div>
+                  )}
+                </td>
+                <td className="py-1 align-top">
+                  {status === 'matched' && <span className="text-green-600 text-[10px]">✓ 已匹配</span>}
+                  {status === 'missing' && (
+                    <span className="text-red-500 text-[10px] cursor-pointer"
+                      onClick={() => setMapping(pb.name, '', 'unset')}>✗ 缺失</span>
+                  )}
+                  {status === 'unset' && <span className="text-gray-300 text-[10px]">—</span>}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function similarity(a, b) {
+  if (!a || !b) return 0
+  if (a === b) return 1
+  if (a.includes(b) || b.includes(a)) return 0.8
+  const wordsA = new Set(a.split(/[\s_\-]+/))
+  const wordsB = new Set(b.split(/[\s_\-]+/))
+  const intersection = [...wordsA].filter((w) => wordsB.has(w)).length
+  const union = new Set([...wordsA, ...wordsB]).size
+  return union > 0 ? intersection / union : 0
 }
