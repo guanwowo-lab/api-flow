@@ -28,12 +28,15 @@ export default function ApiLibrary() {
       setDraftApis([])
       return
     }
+    let cancelled = false
     db.apiFolders.get(selectedId).then((folder) => {
+      if (cancelled) return
       if (folder) {
         setDraftApis((folder.apis || []).map((a) => ({ ...a, children: a.children || [] })))
         setDirty(false)
       }
     })
+    return () => { cancelled = true }
   }, [selectedId])
 
   const selected = folders.find((f) => f.id === selectedId)
@@ -111,12 +114,10 @@ export default function ApiLibrary() {
               {folders.map((f) => (
                 <div
                   key={f.id}
+                  onClick={() => setSelectedId(f.id)}
                   className={`flex items-center justify-between px-3 py-2 rounded cursor-pointer text-sm ${selectedId === f.id ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                 >
-                  <div
-                    className="flex-1 truncate"
-                    onClick={() => setSelectedId(f.id)}
-                  >
+                  <div className="flex-1 truncate">
                     📁 {f.name}
                     <span className="text-xs text-gray-400 ml-1">({(f.apis || []).length})</span>
                   </div>
