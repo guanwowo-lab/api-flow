@@ -43,12 +43,12 @@ export default function MatchPanel() {
     const list = mappings[clientIdx] || []
     const api = apisB[clientIdx]
     const total = countParams(api?.inputParams || []) + countParams(api?.outputParams || [])
-    const matched = list.filter((m) => m.status === 'matched').length
+    const matched = list.filter((m) => m.status === 'matched' && m.ourParam).length
     const missing = list.filter((m) => m.status === 'missing').length
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
-  const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched').length, 0)
+  const totalMatched = apisB.reduce((sum, _, i) => sum + (mappings[i] || []).filter((m) => m.status === 'matched' && m.ourParam).length, 0)
   const totalParams = apisB.reduce((sum, api) => sum + countParams(api.inputParams || []) + countParams(api.outputParams || []), 0)
 
   const handleContinue = () => {
