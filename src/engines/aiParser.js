@@ -3,8 +3,14 @@ const STORAGE_KEY_KEY = 'aiflow_ai_api_key'
 const STORAGE_KEY_MODEL = 'aiflow_ai_model'
 
 export function getAiConfig() {
+  let baseUrl = localStorage.getItem(STORAGE_KEY_BASE) || 'https://api.deepseek.com'
+  // 自动修正旧的错误 URL
+  if (baseUrl.includes('/anthropic')) {
+    baseUrl = 'https://api.deepseek.com'
+    localStorage.setItem(STORAGE_KEY_BASE, baseUrl)
+  }
   return {
-    baseUrl: localStorage.getItem(STORAGE_KEY_BASE) || 'https://api.deepseek.com/anthropic',
+    baseUrl,
     apiKey: localStorage.getItem(STORAGE_KEY_KEY) || 'sk-6371a8cb8f984661b06d029522fc36bf',
     model: localStorage.getItem(STORAGE_KEY_MODEL) || 'deepseek-v4-pro',
   }
