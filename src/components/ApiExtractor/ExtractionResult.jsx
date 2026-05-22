@@ -4,57 +4,45 @@ import ApiEditor from './ApiEditor'
 
 export default function ExtractionResult() {
   const { state, saveExtract, dispatch } = useProject()
-  const [tab, setTab] = useState('A')
-  const [draftA, setDraftA] = useState([])
-  const [draftB, setDraftB] = useState([])
+  const [draft, setDraft] = useState([])
   const [dirty, setDirty] = useState(false)
   const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
     if (!initialized) {
-      setDraftA((state.extractA?.apis || []).map((a) => ({ ...a })))
-      setDraftB((state.extractB?.apis || []).map((a) => ({ ...a })))
+      setDraft((state.extractB?.apis || []).map((a) => ({ ...a })))
       setInitialized(true)
     }
-  }, [state.extractA, state.extractB, initialized])
-
-  const draftApis = tab === 'A' ? draftA : draftB
-  const setDraftApis = tab === 'A' ? setDraftA : setDraftB
+  }, [state.extractB, initialized])
 
   const updateApi = (idx, updated) => {
-    setDraftApis((prev) => prev.map((a, i) => (i === idx ? updated : a)))
+    setDraft((prev) => prev.map((a, i) => (i === idx ? updated : a)))
     setDirty(true)
   }
 
   const deleteApi = (idx) => {
-    setDraftApis((prev) => prev.filter((_, i) => i !== idx))
+    setDraft((prev) => prev.filter((_, i) => i !== idx))
     setDirty(true)
   }
 
   const addApi = () => {
     const newApi = { name: '', url: '', method: 'GET', inputParams: [], outputParams: [] }
-    setDraftApis((prev) => [...prev, newApi])
+    setDraft((prev) => [...prev, newApi])
     setDirty(true)
   }
 
   const handleSave = async () => {
-    if (tab === 'A') {
-      await saveExtract(state.project.id, 'A', draftA)
-    } else {
-      await saveExtract(state.project.id, 'B', draftB)
-    }
+    await saveExtract(state.project.id, 'B', draft)
     setDirty(false)
   }
 
   const handleContinue = async () => {
-    if (dirty) {
-      await saveExtract(state.project.id, 'A', draftA)
-      await saveExtract(state.project.id, 'B', draftB)
-    }
+    if (dirty) await saveExtract(state.project.id, 'B', draft)
     dispatch({ type: 'SET_VIEW', payload: 'match' })
   }
 
-  const hasBothSides = draftA.length > 0 && draftB.length > 0
+  const apisA = state.extractA?.apis || []
+  const canMatch = apisA.length > 0 && draft.length > 0
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -65,22 +53,12 @@ export default function ExtractionResult() {
         >
           &larr; 返回上传
         </button>
-        <h1 className="text-xl font-bold">确认提取结果</h1>
+        <h1 className="text-xl font-bold">确认客户 API 提取结果</h1>
+        <span className="text-sm text-gray-400">{draft.length} 个接口</span>
       </div>
 
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setTab('A')}
-          className={`px-4 py-2 rounded-lg ${tab === 'A' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-        >
-          我方 API ({draftA.length})
-        </button>
-        <button
-          onClick={() => setTab('B')}
-          className={`px-4 py-2 rounded-lg ${tab === 'B' ? 'bg-blue-600 text-white' : 'bg-white border'}`}
-        >
-          客户 API ({draftB.length})
-        </button>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-700">
+        我方已预置 {apisA.length} 个接口，此处只需确认客户侧的提取结果。修改后点击保存。
       </div>
 
       <div className="flex gap-2 mb-4">
@@ -97,7 +75,7 @@ export default function ExtractionResult() {
       </div>
 
       <div className="mb-6 max-h-[60vh] overflow-y-auto">
-        {draftApis.map((api, i) => (
+        {draft.map((api, i) => (
           <ApiEditor
             key={i}
             api={api}
@@ -105,17 +83,17 @@ export default function ExtractionResult() {
             onDelete={() => deleteApi(i)}
           />
         ))}
-        {draftApis.length === 0 && (
-          <p className="text-gray-400 text-center py-8">暂无提取结果，请返回上传文档或手动添加</p>
+        {draft.length === 0 && (
+          <p className="text-gray-400 text-center py-8">未提取到接口，请返回上传文档重试，或手动添加</p>
         )}
       </div>
 
       <button
         onClick={handleContinue}
-        disabled={!hasBothSides}
+        disabled={!canMatch}
         className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-lg"
       >
-        确认并开始匹配
+        {canMatch ? '确认并开始匹配' : `需要我方和客户都有接口才能开始匹配（我方${apisA.length} / 客户${draft.length}）`}
       </button>
     </div>
   )
