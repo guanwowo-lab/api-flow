@@ -79,7 +79,7 @@ export function ProjectProvider({ children }) {
     const map = await db.flowDiagrams.where({ projectId: id, type: 'mapping' }).first()
     if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
 
-    dispatch({ type: 'SET_VIEW', payload: 'manage' })
+    dispatch({ type: 'SET_VIEW', payload: 'upload' })
   }, [])
 
   const saveExtract = useCallback(async (projectId, side, apis) => {
