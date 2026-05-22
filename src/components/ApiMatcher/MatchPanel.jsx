@@ -31,6 +31,13 @@ export default function MatchPanel() {
     await saveMatches(state.project.id, { mappings: updated })
   }
 
+  const clearMappings = async (clientIdx) => {
+    const updated = { ...mappings }
+    delete updated[clientIdx]
+    setMappings(updated)
+    await saveMatches(state.project.id, { mappings: updated })
+  }
+
   const countParams = (params) => {
     let count = params.length
     for (const p of params) {
@@ -95,13 +102,23 @@ export default function MatchPanel() {
                   </span>
                 </button>
                 {isOpen && (
-                  <ClientParamMapping
-                    clientApi={api}
-                    clientIdx={i}
-                    apisA={apisA}
-                    getMapping={(name, type) => getMapping(i, name, type)}
-                    setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
-                  />
+                  <>
+                    <div className="ml-2 mt-1 mb-1">
+                      <button
+                        onClick={() => { if (confirm('确定清除该接口的所有匹配记录？')) clearMappings(i) }}
+                        className="text-xs text-red-400 hover:text-red-600"
+                      >
+                        清除该接口匹配
+                      </button>
+                    </div>
+                    <ClientParamMapping
+                      clientApi={api}
+                      clientIdx={i}
+                      apisA={apisA}
+                      getMapping={(name, type) => getMapping(i, name, type)}
+                      setMapping={(name, type, ourApiIdx, ourParam, status) => setMapping(i, name, type, ourApiIdx, ourParam, status)}
+                    />
+                  </>
                 )}
               </div>
             )
