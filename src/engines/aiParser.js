@@ -61,27 +61,43 @@ export async function aiParseDocument(text) {
 文档内容：
 ${truncated}`
 
-  const response = await fetch(`${config.baseUrl}/v1/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': config.apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: config.model,
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
+  const apiUrl = `${config.baseUrl}/v1/chat/completions`
+
+  let response
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: 8192,
+        temperature: 0.1,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+  } catch (e) {
+    if (e.message === 'Failed to fetch') {
+      throw new Error('网络请求被阻止。可能是 CORS 跨域限制或网络不通。请尝试：\n1. 检查 Base URL 是否能从浏览器访问\n2. 使用 CORS 代理或浏览器插件\n3. 确认 API 服务支持浏览器端调用')
+    }
+    throw e
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '')
-    throw new Error(`AI 请求失败 (${response.status}): ${errText}`)
+    if (response.status === 404) {
+      throw new Error(`接口路径不存在 (404)。请检查设置中的 Base URL 是否正确，当前: ${apiUrl}`)
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`API Key 无效或无权限 (${response.status})。请检查设置中的 API Key`)
+    }
+    throw new Error(`AI 请求失败 (${response.status}): ${errText.slice(0, 300)}`)
   }
 
   const data = await response.json()
-  const reply = data?.content?.[0]?.text || ''
+  const reply = data?.choices?.[0]?.message?.content || ''
 
   // 从 AI 回复中提取 JSON
   const jsonMatch = reply.match(/\[[\s\S]*\]/)
