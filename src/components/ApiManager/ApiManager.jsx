@@ -3,7 +3,7 @@ import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
 
 export default function ApiManager() {
-  const { state, saveExtract, loadApiFolders, dispatch } = useProject()
+  const { state, saveExtract, loadApiFolders, saveApiFolder, dispatch } = useProject()
   const folders = state.apiFolders || []
   const [draftApis, setDraftApis] = useState([])
   const [initialized, setInitialized] = useState(false)
@@ -49,6 +49,36 @@ export default function ApiManager() {
     setDirty(false)
   }
 
+  const handleCleanup = async () => {
+    const keepNames = ['消息数据', '通知数据', '售后订单数据', '订单数据', '商品数据']
+    const keepApis = []
+    for (const f of folders) {
+      if (keepNames.some((n) => f.name.includes(n))) {
+        keepApis.push(...(f.apis || []))
+      }
+    }
+
+    const keepSet = new Set(keepApis.map((a) => (a.name || '') + '|' + (a.url || '')))
+    const junk = draftApis.filter((a) => !keepSet.has((a.name || '') + '|' + (a.url || '')))
+
+    if (junk.length === 0) {
+      alert('没有需要清理的接口，当前项目中的接口都在你的 5 个文件夹中。')
+      return
+    }
+
+    if (!confirm(`将 ${junk.length} 个不在你5个文件夹中的接口移入"垃圾数据"文件夹？\n项目只保留 ${keepApis.length} 个。`)) return
+
+    // 创建垃圾数据文件夹
+    await saveApiFolder({ name: '垃圾数据_' + Date.now(), apis: junk })
+    await loadApiFolders()
+
+    // 替换项目数据为干净的 28 个
+    const cleanApis = keepApis.map((a) => ({ ...a }))
+    await saveExtract(state.project.id, 'A', cleanApis)
+    setDraftApis(cleanApis)
+    setDirty(false)
+  }
+
   const handleContinue = async () => {
     if (dirty) await saveExtract(state.project.id, 'A', draftApis)
     dispatch({ type: 'SET_VIEW', payload: 'upload' })
@@ -80,6 +110,13 @@ export default function ApiManager() {
           className={`px-4 py-2 rounded-lg text-sm border ${showImport ? 'bg-gray-200 border-gray-400' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
         >
           📂 从 API 库导入
+        </button>
+        <button
+          onClick={handleCleanup}
+          className="px-4 py-2 rounded-lg text-sm bg-red-100 text-red-600 hover:bg-red-200 border border-red-300"
+          title="将不在5个API库文件夹中的接口移入垃圾数据文件夹"
+        >
+          🗑 清理垃圾数据
         </button>
         <button
           onClick={handleSaveAll}
