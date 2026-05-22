@@ -68,6 +68,12 @@ export default function MatchPanel() {
           &larr; 返回
         </button>
         <h1 className="text-xl font-bold">API 匹配</h1>
+        <button
+          onClick={() => dispatch({ type: 'SET_VIEW', payload: 'upload' })}
+          className="text-xs text-orange-600 hover:underline ml-auto"
+        >
+          🔄 重新解析客户文档
+        </button>
         <span className="text-sm text-gray-400">
           推荐 {recommendations.length} 对匹配 | 已确认 {pairs.filter((p) => p.confirmed).length}
         </span>
