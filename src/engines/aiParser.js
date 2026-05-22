@@ -79,7 +79,7 @@ ${truncated}`
       },
       body: JSON.stringify({
         model: config.model,
-        max_tokens: 8192,
+        max_tokens: 16384,
         temperature: 0.1,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -121,12 +121,21 @@ ${truncated}`
       parsed = JSON.parse(arrayMatch[0])
     } else if (objectMatch) {
       const obj = JSON.parse(objectMatch[0])
-      parsed = Array.isArray(obj) ? obj : [obj]  // 单个对象包成数组
+      parsed = Array.isArray(obj) ? obj : [obj]
     } else {
-      throw new Error('AI 返回格式异常，未找到 JSON。返回内容: ' + reply.slice(0, 500))
+      throw new Error('未找到 JSON。返回内容: ' + reply.slice(0, 500))
     }
   } catch (e) {
-    throw new Error('AI 返回的 JSON 解析失败: ' + e.message + '\n\n返回内容: ' + reply.slice(0, 500))
+    // 尝试修复截断的 JSON
+    const raw = arrayMatch?.[0] || objectMatch?.[0] || ''
+    const repaired = raw ? repairTruncatedJson(raw) : null
+    if (repaired) {
+      try { parsed = JSON.parse(repaired) } catch (e2) {
+        throw new Error('JSON 解析失败: ' + e.message + '\n返回: ' + reply.slice(0, 500))
+      }
+    } else {
+      throw new Error('JSON 解析失败: ' + e.message + '\n返回: ' + reply.slice(0, 500))
+    }
   }
 
   return (Array.isArray(parsed) ? parsed : [parsed]).map(normalizeApi)
@@ -151,4 +160,40 @@ function normalizeParam(p) {
     remark: p.remark || '',
     children: p.children ? p.children.map(normalizeParam) : [],
   }
+}
+
+function repairTruncatedJson(str) {
+  // 补全因 max_tokens 截断导致的缺失括号和引号
+  let s = str.trimEnd()
+
+  // 移除末尾不完整的属性（如 "name": "商）
+  s = s.replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, '')
+  s = s.replace(/,\s*"[^"]*"\s*:\s*[^\s,\]}]*$/, '')
+  s = s.replace(/,\s*"[^"]*"\s*$/, '')
+  s = s.replace(/,\s*"[^"]*$/, '')
+
+  // 统计未闭合的括号
+  let braceCount = 0, bracketCount = 0, inString = false, escaped = false
+  for (const ch of s) {
+    if (escaped) { escaped = false; continue }
+    if (ch === '\\') { escaped = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '{') braceCount++
+    if (ch === '}') braceCount--
+    if (ch === '[') bracketCount++
+    if (ch === ']') bracketCount--
+  }
+
+  // 补全缺失的括号
+  if (braceCount > 0 || bracketCount > 0) {
+    // 如果最后字符是字符串内，先闭合引号
+    if (inString) s += '"'
+    // 补括号
+    for (let i = 0; i < braceCount; i++) s += '}'
+    for (let i = 0; i < bracketCount; i++) s += ']'
+    return s
+  }
+
+  return null
 }
