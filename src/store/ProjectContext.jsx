@@ -72,9 +72,37 @@ export function ProjectProvider({ children }) {
     dispatch({ type: 'SET_PROJECT', payload: project })
     dispatch({ type: 'SET_FOLDER', payload: null })
 
-    const folders = await db.projectFolders.where({ projectId: id }).toArray()
-    dispatch({ type: 'SET_PROJECT_FOLDERS', payload: folders })
+    let folders = await db.projectFolders.where({ projectId: id }).toArray()
 
+    // 自动迁移：如果没有文件夹，但存在旧数据，创建默认文件夹并迁移
+    if (folders.length === 0) {
+      const oldExtractA = await db.apiExtracts.where({ projectId: id, side: 'A' }).filter((e) => !e.folderId).first()
+      const oldExtractB = await db.apiExtracts.where({ projectId: id, side: 'B' }).filter((e) => !e.folderId).first()
+      const oldMatches = await db.matches.where({ projectId: id }).filter((m) => !m.folderId).first()
+      const hasData = oldExtractA || oldExtractB || oldMatches
+
+      if (hasData) {
+        const now = new Date().toISOString()
+        const folderId = await db.projectFolders.add({ projectId: id, name: '默认对接文件夹', createdAt: now, updatedAt: now })
+
+        // 迁移旧数据
+        const tables = [
+          { store: db.apiExtracts, name: 'apiExtracts' },
+          { store: db.matches, name: 'matches' },
+          { store: db.flowDiagrams, name: 'flowDiagrams' },
+        ]
+        for (const { store } of tables) {
+          const docs = await store.where({ projectId: id }).filter((d) => !d.folderId).toArray()
+          for (const doc of docs) {
+            await store.update(doc.id, { folderId })
+          }
+        }
+
+        folders = await db.projectFolders.where({ projectId: id }).toArray()
+      }
+    }
+
+    dispatch({ type: 'SET_PROJECT_FOLDERS', payload: folders })
     dispatch({ type: 'SET_VIEW', payload: 'projectFolders' })
   }, [])
 
