@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import { parseDocument } from '../../engines/docParser'
 import { extractApis } from '../../engines/apiExtractor'
