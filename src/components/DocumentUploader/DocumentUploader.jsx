@@ -106,6 +106,12 @@ export default function DocumentUploader() {
               <input type="password" value={aiConfig.apiKey} onChange={(e) => setAiConfig({ ...aiConfig, apiKey: e.target.value })}
                 className="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
             </label>
+            <label className="flex flex-col gap-1 col-span-2">
+              <span className="text-xs text-gray-500">提示词（帮助 AI 识别文档字段映射）</span>
+              <textarea value={aiConfig.hint || ''} onChange={(e) => setAiConfig({ ...aiConfig, hint: e.target.value })}
+                className="px-2 py-1.5 border border-gray-300 rounded text-xs outline-none focus:ring-2 focus:ring-blue-500 resize-none h-16"
+                placeholder={'例如：文档中「服务地址」对应接口URL，「入参」对应输入参数，「出参」对应输出参数'} />
+            </label>
           </div>
           <div className="flex gap-2">
             <button onClick={saveAiSettings} className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">保存设置</button>

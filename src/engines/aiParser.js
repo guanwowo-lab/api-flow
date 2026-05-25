@@ -1,6 +1,7 @@
 const STORAGE_KEY_BASE = 'aiflow_ai_base_url'
 const STORAGE_KEY_KEY = 'aiflow_ai_api_key'
 const STORAGE_KEY_MODEL = 'aiflow_ai_model'
+const STORAGE_KEY_HINT = 'aiflow_ai_hint'
 
 export function getAiConfig() {
   let baseUrl = localStorage.getItem(STORAGE_KEY_BASE) || 'https://api.deepseek.com'
@@ -13,13 +14,15 @@ export function getAiConfig() {
     baseUrl,
     apiKey: localStorage.getItem(STORAGE_KEY_KEY) || 'sk-6371a8cb8f984661b06d029522fc36bf',
     model: localStorage.getItem(STORAGE_KEY_MODEL) || 'deepseek-v4-pro',
+    hint: localStorage.getItem(STORAGE_KEY_HINT) || '',
   }
 }
 
-export function saveAiConfig({ baseUrl, apiKey, model }) {
+export function saveAiConfig({ baseUrl, apiKey, model, hint }) {
   if (baseUrl !== undefined) localStorage.setItem(STORAGE_KEY_BASE, baseUrl)
   if (apiKey !== undefined) localStorage.setItem(STORAGE_KEY_KEY, apiKey)
   if (model !== undefined) localStorage.setItem(STORAGE_KEY_MODEL, model)
+  if (hint !== undefined) localStorage.setItem(STORAGE_KEY_HINT, hint)
 }
 
 export function hasAiConfig() {
@@ -63,7 +66,7 @@ export async function aiParseDocument(text) {
 3. outputParams 的 required 统一为 false
 4. 如果文档中未明确标注 HTTP 方法，根据上下文推断
 5. 只返回 JSON 数组，不要任何解释文字
-
+${config.hint ? `\n用户提示：${config.hint}\n` : ''}
 文档内容：
 ${truncated}`
 
