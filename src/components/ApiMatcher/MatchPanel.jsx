@@ -171,6 +171,7 @@ export default function MatchPanel() {
                       getMapping={(key, type) => getMapping(i, key, type)}
                       setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
                       remarkCache={remarkCache}
+                      onRemarkDirty={() => setDirtyClients((prev) => new Set(prev).add(i))}
                     />
                   </>
                 )}
@@ -256,7 +257,7 @@ function flattenParams(params, depth = 0, parentKey = '') {
   return result
 }
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, remarkCache }) {
+function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, remarkCache, onRemarkDirty }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
   const flatInput = flattenParams(inputParams)
@@ -362,7 +363,10 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
                 <RemarkInput
                   cacheKey={`${clientIdx}:${pb._key}:${paramType}`}
                   initialValue={m?.remark || ''}
-                  onCache={(key, val) => { remarkCache.current[key] = val }}
+                  onCache={(key, val) => {
+                    remarkCache.current[key] = val
+                    onRemarkDirty()
+                  }}
                 />
               </td>
             </tr>
