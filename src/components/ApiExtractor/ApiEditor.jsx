@@ -74,9 +74,12 @@ export default function ApiEditor({ api, onSave, onDelete }) {
   }, [draft])
 
   const updateParamsAt = useCallback((pathStr, updater) => {
-    const [paramType, ...indices] = pathStr.split(':')
+    const parts = pathStr.split(':')
+    const paramType = parts[0]
+    // 去掉末尾空字符串（路径可能以 : 结尾表示操作目标数组本身）
+    const indices = parts.slice(1).filter((s) => s !== '')
     setDraft((d) => {
-      if (indices.length === 0 || indices[0] === '') {
+      if (indices.length === 0) {
         return { ...d, [paramType]: updater(d[paramType] || []) }
       }
       return { ...d, [paramType]: updateNested(d[paramType] || [], indices.map(Number), updater) }
@@ -595,16 +598,8 @@ function ensureChildren(arr) {
 function updateNested(arr, indices, updater) {
   if (indices.length === 0) return updater(arr)
   const [idx, ...rest] = indices
-  const numIdx = typeof idx === 'number' ? idx : parseInt(idx)
-  if (isNaN(numIdx)) return updater(arr)
-  if (rest.length === 0 || (rest.length === 1 && rest[0] === '')) {
-    // 到达目标层级，更新该节点的 children
-    return arr.map((item, i) =>
-      i === numIdx ? { ...item, children: updater(item.children || []) } : item
-    )
-  }
   return arr.map((item, i) =>
-    i === numIdx ? { ...item, children: updateNested(item.children || [], rest.filter(r => r !== ''), updater) } : item
+    i === idx ? { ...item, children: updateNested(item.children || [], rest, updater) } : item
   )
 }
 
