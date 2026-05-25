@@ -45,7 +45,7 @@ export default function ApiManager() {
   }
 
   const handleSaveAll = async () => {
-    await saveExtract(state.project.id, 'A', draftApis)
+    await saveExtract(state.project.id, state.folder?.id, 'A', draftApis)
     setDirty(false)
   }
 
@@ -74,13 +74,13 @@ export default function ApiManager() {
 
     // 替换项目数据为干净的 28 个
     const cleanApis = keepApis.map((a) => ({ ...a }))
-    await saveExtract(state.project.id, 'A', cleanApis)
+    await saveExtract(state.project.id, state.folder?.id, 'A', cleanApis)
     setDraftApis(cleanApis)
     setDirty(false)
   }
 
   const handleContinue = async () => {
-    if (dirty) await saveExtract(state.project.id, 'A', draftApis)
+    if (dirty) await saveExtract(state.project.id, state.folder?.id, 'A', draftApis)
     dispatch({ type: 'SET_VIEW', payload: 'upload' })
   }
 

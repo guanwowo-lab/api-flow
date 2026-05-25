@@ -13,7 +13,9 @@ const initialState = {
   matches: null,           // { id, projectId, pairs: [] }
   sequenceDiagram: null,   // { id, projectId, type: 'sequence', data: { nodes, edges } }
   mappingDiagram: null,    // { id, projectId, type: 'mapping', data: { nodes, edges } }
-  activeView: 'home',      // 'home' | 'projects' | 'myApis' | 'create' | 'manage' | 'upload' | ...
+  folder: null,            // { id, projectId, name }
+  projectFolders: [],      // [{ id, projectId, name, createdAt, updatedAt }]
+  activeView: 'home',
 }
 
 function reducer(state, action) {
@@ -34,6 +36,10 @@ function reducer(state, action) {
         : { ...state, mappingDiagram: action.payload }
     case 'SET_API_FOLDERS':
       return { ...state, apiFolders: action.payload }
+    case 'SET_FOLDER':
+      return { ...state, folder: action.payload }
+    case 'SET_PROJECT_FOLDERS':
+      return { ...state, projectFolders: action.payload }
     case 'SET_VIEW':
       return { ...state, activeView: action.payload }
     case 'RESET':
@@ -64,66 +70,12 @@ export function ProjectProvider({ children }) {
     const project = await db.projects.get(id)
     if (!project) return
     dispatch({ type: 'SET_PROJECT', payload: project })
+    dispatch({ type: 'SET_FOLDER', payload: null })
 
-    const extractA = await db.apiExtracts.where({ projectId: id, side: 'A' }).first()
-    const extractB = await db.apiExtracts.where({ projectId: id, side: 'B' }).first()
-    if (extractA) dispatch({ type: 'SET_EXTRACT', payload: extractA })
-    if (extractB) dispatch({ type: 'SET_EXTRACT', payload: extractB })
+    const folders = await db.projectFolders.where({ projectId: id }).toArray()
+    dispatch({ type: 'SET_PROJECT_FOLDERS', payload: folders })
 
-    const matches = await db.matches.where({ projectId: id }).first()
-    if (matches) dispatch({ type: 'SET_MATCHES', payload: matches })
-
-    const seq = await db.flowDiagrams.where({ projectId: id, type: 'sequence' }).first()
-    if (seq) dispatch({ type: 'SET_DIAGRAM', payload: seq })
-
-    const map = await db.flowDiagrams.where({ projectId: id, type: 'mapping' }).first()
-    if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
-
-    // 根据已有数据决定跳转：有客户API则直接去匹配，否则去上传
-    if (extractB && extractB.apis && extractB.apis.length > 0) {
-      dispatch({ type: 'SET_VIEW', payload: 'match' })
-    } else {
-      dispatch({ type: 'SET_VIEW', payload: 'upload' })
-    }
-  }, [])
-
-  const saveExtract = useCallback(async (projectId, side, apis) => {
-    const existing = await db.apiExtracts.where({ projectId, side }).first()
-    const data = { projectId, side, apis }
-    if (existing) {
-      await db.apiExtracts.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.apiExtracts.add(data)
-    }
-    dispatch({ type: 'SET_EXTRACT', payload: data })
-    await db.projects.update(projectId, { updatedAt: new Date().toISOString() })
-  }, [])
-
-  const saveMatches = useCallback(async (projectId, matchData) => {
-    const existing = await db.matches.where({ projectId }).first()
-    const data = { projectId, ...matchData }
-    if (existing) {
-      await db.matches.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.matches.add(data)
-    }
-    dispatch({ type: 'SET_MATCHES', payload: data })
-    await db.projects.update(projectId, { updatedAt: new Date().toISOString() })
-  }, [])
-
-  const saveDiagram = useCallback(async (projectId, type, diagramData) => {
-    const existing = await db.flowDiagrams.where({ projectId, type }).first()
-    const data = { projectId, type, data: diagramData }
-    if (existing) {
-      await db.flowDiagrams.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.flowDiagrams.add(data)
-    }
-    dispatch({ type: 'SET_DIAGRAM', payload: data })
-    await db.projects.update(projectId, { updatedAt: new Date().toISOString() })
+    dispatch({ type: 'SET_VIEW', payload: 'projectFolders' })
   }, [])
 
   const loadApiFolders = useCallback(async () => {
@@ -154,12 +106,101 @@ export function ProjectProvider({ children }) {
     await loadApiFolders()
   }, [loadApiFolders])
 
+  const loadProjectFolders = useCallback(async (projectId) => {
+    const list = await db.projectFolders.where({ projectId }).toArray()
+    dispatch({ type: 'SET_PROJECT_FOLDERS', payload: list })
+  }, [])
+
+  const createProjectFolder = useCallback(async (projectId, name) => {
+    const now = new Date().toISOString()
+    const id = await db.projectFolders.add({ projectId, name, createdAt: now, updatedAt: now })
+    await loadProjectFolders(projectId)
+    return { id, projectId, name, createdAt: now, updatedAt: now }
+  }, [loadProjectFolders])
+
+  const deleteProjectFolder = useCallback(async (projectId, id) => {
+    await db.projectFolders.delete(id)
+    // 同时清理该文件夹下的数据
+    const extracts = await db.apiExtracts.where({ folderId: id }).toArray()
+    for (const e of extracts) await db.apiExtracts.delete(e.id)
+    const matchDocs = await db.matches.where({ folderId: id }).toArray()
+    for (const m of matchDocs) await db.matches.delete(m.id)
+    const diagrams = await db.flowDiagrams.where({ folderId: id }).toArray()
+    for (const d of diagrams) await db.flowDiagrams.delete(d.id)
+    await loadProjectFolders(projectId)
+  }, [loadProjectFolders])
+
+  const openFolder = useCallback(async (folder) => {
+    dispatch({ type: 'SET_FOLDER', payload: folder })
+
+    const extractA = await db.apiExtracts.where({ folderId: folder.id, side: 'A' }).first()
+    const extractB = await db.apiExtracts.where({ folderId: folder.id, side: 'B' }).first()
+    if (extractA) dispatch({ type: 'SET_EXTRACT', payload: extractA })
+    else dispatch({ type: 'SET_EXTRACT', payload: { folderId: folder.id, side: 'A', apis: [] } })
+    if (extractB) dispatch({ type: 'SET_EXTRACT', payload: extractB })
+
+    const matches = await db.matches.where({ folderId: folder.id }).first()
+    if (matches) dispatch({ type: 'SET_MATCHES', payload: matches })
+
+    const seq = await db.flowDiagrams.where({ folderId: folder.id, type: 'sequence' }).first()
+    if (seq) dispatch({ type: 'SET_DIAGRAM', payload: seq })
+
+    const map = await db.flowDiagrams.where({ folderId: folder.id, type: 'mapping' }).first()
+    if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
+
+    if (extractB && extractB.apis && extractB.apis.length > 0) {
+      dispatch({ type: 'SET_VIEW', payload: 'match' })
+    } else {
+      dispatch({ type: 'SET_VIEW', payload: 'upload' })
+    }
+  }, [])
+
+  const saveExtract = useCallback(async (projectId, folderId, side, apis) => {
+    const existing = await db.apiExtracts.where({ folderId, side }).first()
+    const data = { projectId, folderId, side, apis }
+    if (existing) {
+      await db.apiExtracts.update(existing.id, data)
+      data.id = existing.id
+    } else {
+      data.id = await db.apiExtracts.add(data)
+    }
+    dispatch({ type: 'SET_EXTRACT', payload: data })
+    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+  }, [])
+
+  const saveMatches = useCallback(async (projectId, folderId, matchData) => {
+    const existing = await db.matches.where({ folderId }).first()
+    const data = { projectId, folderId, ...matchData }
+    if (existing) {
+      await db.matches.update(existing.id, data)
+      data.id = existing.id
+    } else {
+      data.id = await db.matches.add(data)
+    }
+    dispatch({ type: 'SET_MATCHES', payload: data })
+    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+  }, [])
+
+  const saveDiagram = useCallback(async (projectId, folderId, type, diagramData) => {
+    const existing = await db.flowDiagrams.where({ folderId, type }).first()
+    const data = { projectId, folderId, type, data: diagramData }
+    if (existing) {
+      await db.flowDiagrams.update(existing.id, data)
+      data.id = existing.id
+    } else {
+      data.id = await db.flowDiagrams.add(data)
+    }
+    dispatch({ type: 'SET_DIAGRAM', payload: data })
+    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+  }, [])
+
   return (
     <ProjectContext.Provider value={{
       state, dispatch,
       loadProjects, createProject, openProject,
       saveExtract, saveMatches, saveDiagram,
       loadApiFolders, saveApiFolder, deleteApiFolder,
+      loadProjectFolders, createProjectFolder, deleteProjectFolder, openFolder,
     }}>
       {children}
     </ProjectContext.Provider>

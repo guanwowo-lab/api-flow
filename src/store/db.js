@@ -17,4 +17,13 @@ db.version(2).stores({
   apiFolders: '++id, name, createdAt, updatedAt',
 })
 
+db.version(3).stores({
+  projects: '++id, name, createdAt, updatedAt',
+  apiExtracts: '++id, projectId, folderId, side',
+  matches: '++id, projectId, folderId',
+  flowDiagrams: '++id, projectId, folderId, type',
+  apiFolders: '++id, name, createdAt, updatedAt',
+  projectFolders: '++id, projectId, name, createdAt, updatedAt',
+})
+
 export default db

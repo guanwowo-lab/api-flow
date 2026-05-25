@@ -55,7 +55,7 @@ export default function DocumentUploader() {
         return
       }
 
-      await saveExtract(state.project.id, 'B', apisB)
+      await saveExtract(state.project.id, state.folder?.id, 'B', apisB)
       dispatch({ type: 'SET_VIEW', payload: 'extract' })
     } catch (e) {
       setError(e.message)

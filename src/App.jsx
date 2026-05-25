@@ -8,12 +8,16 @@ import ExtractionResult from './components/ApiExtractor/ExtractionResult'
 import MatchPanel from './components/ApiMatcher/MatchPanel'
 import SequenceEditor from './components/FlowEditor/SequenceEditor'
 import MappingEditor from './components/FlowEditor/MappingEditor'
+import ProjectFolderList from './components/ProjectManager/ProjectFolderList'
 
 export default function App() {
   const { state } = useProject()
 
   if (state.activeView === 'projects') return <ProjectList />
   if (state.activeView === 'create') return <ProjectCreate />
+  if (state.activeView === 'projectFolders') return (
+    <div className="min-h-screen bg-gray-100"><ProjectFolderList /></div>
+  )
   if (state.activeView === 'apiLibrary') return (
     <div className="min-h-screen bg-gray-100"><ApiLibrary /></div>
   )

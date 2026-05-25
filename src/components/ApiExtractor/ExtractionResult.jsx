@@ -32,12 +32,12 @@ export default function ExtractionResult() {
   }
 
   const handleSave = async () => {
-    await saveExtract(state.project.id, 'B', draft)
+    await saveExtract(state.project.id, state.folder?.id, 'B', draft)
     setDirty(false)
   }
 
   const handleContinue = async () => {
-    if (dirty) await saveExtract(state.project.id, 'B', draft)
+    if (dirty) await saveExtract(state.project.id, state.folder?.id, 'B', draft)
     dispatch({ type: 'SET_VIEW', payload: 'match' })
   }
 

@@ -53,7 +53,7 @@ export default function MatchPanel() {
     })
     const updated = { ...mappings, [clientIdx]: list }
     setMappings(updated)
-    await saveMatches(state.project.id, { mappings: updated })
+    await saveMatches(state.project.id, state.folder?.id, { mappings: updated })
     setDirtyClients((prev) => {
       const next = new Set(prev)
       next.delete(clientIdx)

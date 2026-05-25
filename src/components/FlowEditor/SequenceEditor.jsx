@@ -69,7 +69,7 @@ export default function SequenceEditor() {
 
   const handleSave = async () => {
     const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) }
-    await saveDiagram(state.project.id, 'sequence', data)
+    await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
   }
 
   return (

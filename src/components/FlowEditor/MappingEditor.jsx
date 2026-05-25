@@ -87,7 +87,7 @@ export default function MappingEditor() {
 
   const handleSave = async () => {
     const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) }
-    await saveDiagram(state.project.id, 'mapping', data)
+    await saveDiagram(state.project.id, state.folder?.id, 'mapping', data)
   }
 
   return (
