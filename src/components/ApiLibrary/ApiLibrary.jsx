@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
 import db from '../../store/db'
-import { extractApis } from '../../engines/apiExtractor'
 import { aiParseDocument } from '../../engines/aiParser'
 
 export default function ApiLibrary() {
