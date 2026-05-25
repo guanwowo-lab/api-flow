@@ -41,7 +41,8 @@ export default function ExtractionResult() {
     dispatch({ type: 'SET_VIEW', payload: 'match' })
   }
 
-  const apisA = state.extractA?.apis || []
+  const folders = state.apiFolders || []
+  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
   const canMatch = apisA.length > 0 && draft.length > 0
 
   return (

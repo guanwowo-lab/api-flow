@@ -5,7 +5,7 @@ import { extractApis } from '../../engines/apiExtractor'
 import { aiParseDocument, getAiConfig, saveAiConfig, hasAiConfig } from '../../engines/aiParser'
 
 export default function DocumentUploader() {
-  const { state, dispatch, saveExtract } = useProject()
+  const { state, dispatch, saveExtract, loadApiFolders } = useProject()
   const [file, setFile] = useState(null)
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
@@ -16,7 +16,12 @@ export default function DocumentUploader() {
   const [showSettings, setShowSettings] = useState(false)
   const [aiConfig, setAiConfig] = useState(getAiConfig())
   const fileRef = useRef(null)
-  const apisA = state.extractA?.apis || []
+
+  useEffect(() => { loadApiFolders() }, [])
+
+  // 我方API直接取库中所有接口
+  const folders = state.apiFolders || []
+  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
 
   const saveAiSettings = () => {
     saveAiConfig(aiConfig)
