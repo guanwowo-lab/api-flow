@@ -6,14 +6,10 @@ export default function ExtractionResult() {
   const { state, saveExtract, dispatch } = useProject()
   const [draft, setDraft] = useState([])
   const [dirty, setDirty] = useState(false)
-  const [initialized, setInitialized] = useState(false)
 
   useEffect(() => {
-    if (!initialized) {
-      setDraft((state.extractB?.apis || []).map((a) => ({ ...a })))
-      setInitialized(true)
-    }
-  }, [state.extractB, initialized])
+    setDraft((state.extractB?.apis || []).map((a) => ({ ...a, children: a.children || [] })))
+  }, [state.extractB])
 
   const updateApi = (idx, updated) => {
     setDraft((prev) => prev.map((a, i) => (i === idx ? updated : a)))
