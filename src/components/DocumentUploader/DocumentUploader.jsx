@@ -190,7 +190,8 @@ export default function DocumentUploader() {
           <textarea
             value={aiConfig.hint || ''}
             onChange={(e) => { setAiConfig({ ...aiConfig, hint: e.target.value }); saveAiConfig({ hint: e.target.value }) }}
-            className="w-full px-2 py-1.5 border border-purple-200 rounded text-xs outline-none focus:ring-2 focus:ring-purple-500 resize-none h-12"
+            disabled={loading}
+            className="w-full px-2 py-1.5 border border-purple-200 rounded text-xs outline-none focus:ring-2 focus:ring-purple-500 resize-none h-12 disabled:bg-gray-100 disabled:text-gray-400"
             placeholder="提示词（可选）：告诉AI如何识别文档字段。例如：「服务地址」对应接口URL，「入参」对应输入参数"
           />
         </div>
