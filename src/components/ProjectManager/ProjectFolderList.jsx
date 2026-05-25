@@ -41,7 +41,7 @@ export default function ProjectFolderList() {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="新建对接文件夹，如：电子商城统一接口"
+            placeholder="新建对接文件夹"
           />
           <button
             onClick={handleCreate}
