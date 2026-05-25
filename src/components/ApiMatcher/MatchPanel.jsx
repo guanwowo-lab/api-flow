@@ -139,6 +139,9 @@ export default function MatchPanel() {
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'extract' })}
           className="text-gray-500 hover:text-gray-700">&larr; 返回</button>
         <h1 className="text-xl font-bold">API 匹配</h1>
+        <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'home' })} className="text-xs text-gray-500 hover:underline">
+          🏠 首页
+        </button>
         <button onClick={handleExport} className="text-xs text-green-600 hover:underline ml-auto">
           📥 下载匹配结果
         </button>
