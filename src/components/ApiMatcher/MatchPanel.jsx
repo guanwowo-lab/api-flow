@@ -22,31 +22,16 @@ export default function MatchPanel() {
   }
 
   const [dirtyClients, setDirtyClients] = useState(new Set())
+  const remarkCache = useRef({})
 
-  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status, remark) => {
+  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
     const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
     if (status !== 'unset') {
-      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status, remark: remark !== undefined ? remark : (existing?.remark || '') })
+      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status, remark: existing?.remark || '' })
     }
     setMappings((prev) => ({ ...prev, [clientIdx]: list }))
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
-  }
-
-  const updateRemark = async (clientIdx, paramKey, paramType, remark) => {
-    const list = mappings[clientIdx] || []
-    const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
-    let updated
-    if (exists) {
-      updated = list.map((m) =>
-        m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
-      )
-    } else {
-      updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
-    }
-    const newMappings = { ...mappings, [clientIdx]: updated }
-    setMappings(newMappings)
-    await saveMatches(state.project.id, { mappings: newMappings })
   }
 
   const clearMappings = (clientIdx) => {
@@ -59,7 +44,16 @@ export default function MatchPanel() {
   }
 
   const saveMapping = async (clientIdx) => {
-    await saveMatches(state.project.id, { mappings })
+    // 合并备注缓存到映射数据
+    const cache = remarkCache.current
+    const list = (mappings[clientIdx] || []).map((m) => {
+      const key = `${clientIdx}:${m.clientParam}:${m.paramType}`
+      if (cache[key] !== undefined) return { ...m, remark: cache[key] }
+      return m
+    })
+    const updated = { ...mappings, [clientIdx]: list }
+    setMappings(updated)
+    await saveMatches(state.project.id, { mappings: updated })
     setDirtyClients((prev) => {
       const next = new Set(prev)
       next.delete(clientIdx)
@@ -176,7 +170,7 @@ export default function MatchPanel() {
                       apisA={apisA}
                       getMapping={(key, type) => getMapping(i, key, type)}
                       setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
-                      updateRemark={(key, type, remark) => updateRemark(i, key, type, remark)}
+                      remarkCache={remarkCache}
                     />
                   </>
                 )}
@@ -262,7 +256,7 @@ function flattenParams(params, depth = 0, parentKey = '') {
   return result
 }
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, updateRemark }) {
+function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, remarkCache }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
   const flatInput = flattenParams(inputParams)
@@ -366,8 +360,9 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
               </td>
               <td className="py-1 px-1 align-top">
                 <RemarkInput
-                  value={m?.remark || ''}
-                  onSave={(val) => updateRemark(clientIdx, pb._key, paramType, val)}
+                  cacheKey={`${clientIdx}:${pb._key}:${paramType}`}
+                  initialValue={m?.remark || ''}
+                  onCache={(key, val) => { remarkCache.current[key] = val }}
                 />
               </td>
             </tr>
@@ -396,28 +391,17 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
   )
 }
 
-function RemarkInput({ value, onSave }) {
+function RemarkInput({ cacheKey, initialValue, onCache }) {
   const inputRef = useRef(null)
-
-  useEffect(() => {
-    if (inputRef.current && document.activeElement !== inputRef.current) {
-      inputRef.current.value = value || ''
-    }
-  }, [value])
-
-  const handleBlur = () => {
-    const val = inputRef.current?.value || ''
-    if (val !== (value || '')) {
-      onSave(val)
-    }
-  }
 
   return (
     <input
       ref={inputRef}
       type="text"
-      defaultValue={value || ''}
-      onBlur={handleBlur}
+      defaultValue={initialValue || ''}
+      onChange={() => {
+        if (inputRef.current) onCache(cacheKey, inputRef.current.value)
+      }}
       className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
       placeholder="备注"
     />
