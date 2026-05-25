@@ -73,7 +73,7 @@ export default function DocumentUploader() {
     <div className="max-w-3xl mx-auto p-6">
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => dispatch({ type: 'SET_VIEW', payload: 'projects' })}
+          onClick={() => dispatch({ type: 'SET_VIEW', payload: 'projectFolders' })}
           className="text-gray-500 hover:text-gray-700"
         >
           &larr; 项目列表
