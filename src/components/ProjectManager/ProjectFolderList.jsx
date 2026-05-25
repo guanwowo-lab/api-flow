@@ -56,7 +56,7 @@ export default function ProjectFolderList() {
           {folders.map((f) => (
             <div
               key={f.id}
-              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+              className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-blue-300 cursor-pointer"
             >
               <div className="flex-1" onClick={() => openFolder(f)}>
                 <div className="font-medium text-sm">📁 {f.name}</div>
@@ -64,12 +64,29 @@ export default function ProjectFolderList() {
                   最后修改: {new Date(f.updatedAt).toLocaleString()}
                 </div>
               </div>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDelete(f.id) }}
-                className="text-red-400 hover:text-red-600 text-xs ml-3 shrink-0"
-              >
-                删除
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const newName = prompt('重命名文件夹：', f.name)
+                    if (newName && newName.trim()) {
+                      import('../../store/db').then(({ default: db }) => {
+                        db.projectFolders.update(f.id, { name: newName.trim(), updatedAt: new Date().toISOString() })
+                          .then(() => loadProjectFolders(state.project.id))
+                      })
+                    }
+                  }}
+                  className="text-gray-400 hover:text-blue-600 text-xs shrink-0"
+                >
+                  重命名
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(f.id) }}
+                  className="text-red-400 hover:text-red-600 text-xs shrink-0"
+                >
+                  删除
+                </button>
+              </div>
             </div>
           ))}
           {folders.length === 0 && (
