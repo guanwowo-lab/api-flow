@@ -595,10 +595,16 @@ function ensureChildren(arr) {
 function updateNested(arr, indices, updater) {
   if (indices.length === 0) return updater(arr)
   const [idx, ...rest] = indices
+  const numIdx = typeof idx === 'number' ? idx : parseInt(idx)
+  if (isNaN(numIdx)) return updater(arr)
+  if (rest.length === 0 || (rest.length === 1 && rest[0] === '')) {
+    // 到达目标层级，更新该节点的 children
+    return arr.map((item, i) =>
+      i === numIdx ? { ...item, children: updater(item.children || []) } : item
+    )
+  }
   return arr.map((item, i) =>
-    i === idx
-      ? { ...item, children: updateNested(item.children || [], rest, updater) }
-      : item
+    i === numIdx ? { ...item, children: updateNested(item.children || [], rest.filter(r => r !== ''), updater) } : item
   )
 }
 
