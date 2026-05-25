@@ -93,14 +93,52 @@ export default function MatchPanel() {
     dispatch({ type: 'SET_VIEW', payload: 'sequence' })
   }
 
+  const handleExport = () => {
+    const rows = [['客户接口', 'URL', '方法', '参数类型', '字段名称', '数据类型', '必传', '字段描述', '映射到我方接口', '映射到字段', '匹配状态', '备注']]
+
+    for (let ci = 0; ci < apisB.length; ci++) {
+      const api = apisB[ci]
+      const list = mappings[ci] || []
+      const flatIn = flattenParams(api.inputParams || []).map((p) => ({ ...p, paramType: '输入参数' }))
+      const flatOut = flattenParams(api.outputParams || []).map((p) => ({ ...p, paramType: '输出参数' }))
+      const allParams = [...flatIn, ...flatOut]
+
+      if (allParams.length === 0) {
+        rows.push([api.name || '', api.url || '', api.method || '', '', '', '', '', '', '', '', '', ''])
+      } else {
+        for (const p of allParams) {
+          const m = list.find((x) => x.clientParam === p._key && x.paramType === p.paramType)
+          const ourApi = apisA[m?.ourApiIdx]
+          const status = m?.status === 'matched' && m.ourParam ? '已匹配' : m?.status === 'missing' ? '缺失' : '未匹配'
+          rows.push([
+            (p._depth || 0) > 0 ? '  '.repeat(p._depth) + '└ ' + p.name : p.name,
+            api.url || '', api.method || '', p.paramType, p.name, p.type || '',
+            p.required ? '是' : '否', p.description || '', ourApi?.name || '',
+            m?.ourParam === '__skip' ? '不匹配' : (m?.ourParam || ''), status, m?.remark || '',
+          ])
+        }
+      }
+    }
+
+    const html = `<html><head><meta charset="UTF-8"></head><body><table border="1">${rows.map((r) => '<tr>' + r.map((c) => `<td>${c}</td>`).join('') + '</tr>').join('')}</table></body></html>`
+    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `${state.project?.name || '匹配结果'}_${state.folder?.name || ''}.xls`
+    a.click(); URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="mx-auto p-6" style={{ maxWidth: '95vw' }}>
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'extract' })}
           className="text-gray-500 hover:text-gray-700">&larr; 返回</button>
         <h1 className="text-xl font-bold">API 匹配</h1>
+        <button onClick={handleExport} className="text-xs text-green-600 hover:underline ml-auto">
+          📥 下载匹配结果
+        </button>
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'upload' })}
-          className="text-xs text-orange-600 hover:underline ml-auto">🔄 重新解析客户文档</button>
+          className="text-xs text-orange-600 hover:underline">🔄 重新解析客户文档</button>
         <span className="text-sm text-gray-400">
           {totalMatched}/{totalParams} 参数已匹配
         </span>
