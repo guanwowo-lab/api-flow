@@ -34,22 +34,19 @@ export default function MatchPanel() {
   }
 
   const updateRemark = async (clientIdx, paramKey, paramType, remark) => {
-    setMappings((prev) => {
-      const list = prev[clientIdx] || []
-      const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
-      let updated
-      if (exists) {
-        updated = list.map((m) =>
-          m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
-        )
-      } else {
-        updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
-      }
-      const newMappings = { ...prev, [clientIdx]: updated }
-      // 自动保存备注到数据库
-      saveMatches(state.project.id, { mappings: newMappings })
-      return newMappings
-    })
+    const list = mappings[clientIdx] || []
+    const exists = list.some((m) => m.clientParam === paramKey && m.paramType === paramType)
+    let updated
+    if (exists) {
+      updated = list.map((m) =>
+        m.clientParam === paramKey && m.paramType === paramType ? { ...m, remark } : m
+      )
+    } else {
+      updated = [...list, { clientParam: paramKey, paramType, ourApiIdx: -1, ourParam: '', status: 'unset', remark }]
+    }
+    const newMappings = { ...mappings, [clientIdx]: updated }
+    setMappings(newMappings)
+    await saveMatches(state.project.id, { mappings: newMappings })
   }
 
   const clearMappings = (clientIdx) => {
@@ -370,7 +367,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
               <td className="py-1 px-1 align-top">
                 <RemarkInput
                   value={m?.remark || ''}
-                  onBlur={(val) => updateRemark(clientIdx, pb._key, paramType, val)}
+                  onSave={(val) => updateRemark(clientIdx, pb._key, paramType, val)}
                 />
               </td>
             </tr>
@@ -399,35 +396,28 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
   )
 }
 
-function RemarkInput({ value, onBlur }) {
-  const [local, setLocal] = useState(value)
-  const initialRef = useRef(value)
+function RemarkInput({ value, onSave }) {
+  const inputRef = useRef(null)
 
-  // 只在外部 value 真的变了（且不是我们自己 blur 导致的）时才同步
-  const savedRef = useRef(value)
   useEffect(() => {
-    if (value !== savedRef.current) {
-      setLocal(value)
-      initialRef.current = value
-      savedRef.current = value
+    if (inputRef.current && document.activeElement !== inputRef.current) {
+      inputRef.current.value = value || ''
     }
   }, [value])
 
   const handleBlur = () => {
-    if (local !== initialRef.current) {
-      onBlur(local)
-      savedRef.current = local
-      initialRef.current = local
+    const val = inputRef.current?.value || ''
+    if (val !== (value || '')) {
+      onSave(val)
     }
   }
 
   return (
     <input
+      ref={inputRef}
       type="text"
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
+      defaultValue={value || ''}
       onBlur={handleBlur}
-      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
       className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400"
       placeholder="备注"
     />
