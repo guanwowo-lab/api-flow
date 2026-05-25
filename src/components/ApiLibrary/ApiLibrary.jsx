@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
 import db from '../../store/db'
 import { aiParseDocument } from '../../engines/aiParser'
+import { parseDocument } from '../../engines/docParser'
 
 export default function ApiLibrary() {
   const { state, loadApiFolders, saveApiFolder, deleteApiFolder, dispatch } = useProject()
@@ -145,18 +146,24 @@ function FolderDetail({ folderId }) {
 
   const [aiOpen, setAiOpen] = useState(false)
   const [aiText, setAiText] = useState('')
+  const [aiFile, setAiFile] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const aiFileRef = useRef(null)
 
   const handleAiParse = async () => {
-    if (!aiText.trim()) return
+    if (!aiText.trim() && !aiFile) return
     setAiLoading(true)
     setAiError('')
     try {
-      let apis = []
-      if (aiText.trim()) {
-        apis = await aiParseDocument(aiText)
+      let docText = aiText.trim()
+      if (aiFile) {
+        const result = await parseDocument(aiFile)
+        docText = result.text
       }
+      if (!docText) { setAiError('未能提取到文本'); setAiLoading(false); return }
+
+      const apis = await aiParseDocument(docText)
       if (apis.length === 0) {
         setAiError('未识别到接口')
       } else {
@@ -164,6 +171,7 @@ function FolderDetail({ folderId }) {
         setDirty(true)
         setAiOpen(false)
         setAiText('')
+        setAiFile(null)
       }
     } catch (e) {
       setAiError(e.message)
@@ -226,18 +234,28 @@ function FolderDetail({ folderId }) {
             <button onClick={() => setAiOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">关闭</button>
           </div>
           <p className="text-xs text-gray-500 mb-2">
-            粘贴我方 API 文档内容，AI 自动识别接口名称、地址、参数并填充
+            上传文件或粘贴文档内容，AI 自动识别接口名称、地址、参数并填充
           </p>
+          <div className="flex gap-2 mb-2">
+            <button onClick={() => aiFileRef.current?.click()} className="px-3 py-1.5 border border-purple-300 rounded text-xs hover:bg-purple-100">
+              📎 上传文件
+            </button>
+            <input ref={aiFileRef} type="file" accept=".docx,.pdf" className="hidden"
+              onChange={(e) => setAiFile(e.target.files[0])} />
+            {aiFile && (
+              <span className="text-xs text-green-600 self-center">{aiFile.name}</span>
+            )}
+          </div>
           <textarea
             value={aiText}
             onChange={(e) => setAiText(e.target.value)}
             className="w-full h-32 px-3 py-2 border border-gray-300 rounded text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500 resize-none"
-            placeholder="粘贴API文档内容..."
+            placeholder="或粘贴文档内容..."
           />
           {aiError && <p className="text-red-500 text-xs mt-1">{aiError}</p>}
           <button
             onClick={handleAiParse}
-            disabled={aiLoading || !aiText.trim()}
+            disabled={aiLoading || (!aiText.trim() && !aiFile)}
             className="mt-2 px-4 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50 w-full"
           >
             {aiLoading ? 'AI 解析中...' : '开始 AI 解析'}
