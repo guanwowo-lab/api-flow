@@ -94,27 +94,32 @@ export default function MatchPanel() {
   }
 
   const handleExport = () => {
-    const rows = [['客户接口', 'URL', '方法', '参数类型', '字段名称', '数据类型', '必传', '字段描述', '映射到我方接口', '映射到字段', '匹配状态', '备注']]
+    const rows = [['客户接口名称', '字段名称', '类型', '必传', '字段描述', '映射到我方接口', '映射到字段', '状态', '备注']]
 
     for (let ci = 0; ci < apisB.length; ci++) {
       const api = apisB[ci]
       const list = mappings[ci] || []
-      const flatIn = flattenParams(api.inputParams || []).map((p) => ({ ...p, paramType: '输入参数' }))
-      const flatOut = flattenParams(api.outputParams || []).map((p) => ({ ...p, paramType: '输出参数' }))
+      const flatIn = flattenParams(api.inputParams || []).map((p) => ({ ...p, paramType: 'input' }))
+      const flatOut = flattenParams(api.outputParams || []).map((p) => ({ ...p, paramType: 'output' }))
       const allParams = [...flatIn, ...flatOut]
 
       if (allParams.length === 0) {
-        rows.push([api.name || '', api.url || '', api.method || '', '', '', '', '', '', '', '', '', ''])
+        rows.push([api.name || '', '', '', '', '', '', '', '', ''])
       } else {
         for (const p of allParams) {
           const m = list.find((x) => x.clientParam === p._key && x.paramType === p.paramType)
           const ourApi = apisA[m?.ourApiIdx]
-          const status = m?.status === 'matched' && m.ourParam ? '已匹配' : m?.status === 'missing' ? '缺失' : '未匹配'
+          let status = '未匹配'
+          if (m?.status === 'matched' && m.ourParam === '__skip') status = '无需匹配'
+          else if (m?.status === 'matched' && m.ourParam) status = '已匹配'
+          else if (m?.status === 'missing') status = '未匹配'
+
+          const displayName = (p._depth || 0) > 0 ? '  '.repeat(p._depth) + '└ ' + p.name : p.name
           rows.push([
-            (p._depth || 0) > 0 ? '  '.repeat(p._depth) + '└ ' + p.name : p.name,
-            api.url || '', api.method || '', p.paramType, p.name, p.type || '',
-            p.required ? '是' : '否', p.description || '', ourApi?.name || '',
-            m?.ourParam === '__skip' ? '不匹配' : (m?.ourParam || ''), status, m?.remark || '',
+            api.name || '', displayName, p.type || '',
+            p.paramType === 'input' ? (p.required ? '是' : '否') : '',
+            p.description || '', ourApi?.name || '',
+            m?.ourParam === '__skip' ? '无需匹配' : (m?.ourParam || ''), status, m?.remark || '',
           ])
         }
       }
