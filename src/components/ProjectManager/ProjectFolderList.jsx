@@ -8,8 +8,12 @@ export default function ProjectFolderList() {
   const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
-    if (state.project?.id) loadProjectFolders(state.project.id)
-  }, [state.project?.id, loadProjectFolders])
+    if (state.project?.id) {
+      loadProjectFolders(state.project.id)
+    } else {
+      dispatch({ type: 'SET_VIEW', payload: 'projects' })
+    }
+  }, [])
 
   const handleCreate = async () => {
     const name = newName.trim()
