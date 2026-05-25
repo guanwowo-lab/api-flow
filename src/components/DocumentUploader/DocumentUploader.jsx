@@ -183,8 +183,16 @@ export default function DocumentUploader() {
       </div>
 
       {useAI && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4 text-xs text-purple-700">
-          🤖 使用 <strong>AI 智能解析</strong>（{aiConfig.model}）。AI 会理解文档结构并提取接口，比规则匹配更准确，但需要几秒等待。
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4 text-xs">
+          <div className="text-purple-700 mb-2">
+            🤖 使用 <strong>AI 智能解析</strong>（{aiConfig.model}）
+          </div>
+          <textarea
+            value={aiConfig.hint || ''}
+            onChange={(e) => { setAiConfig({ ...aiConfig, hint: e.target.value }); saveAiConfig({ hint: e.target.value }) }}
+            className="w-full px-2 py-1.5 border border-purple-200 rounded text-xs outline-none focus:ring-2 focus:ring-purple-500 resize-none h-12"
+            placeholder="提示词（可选）：告诉AI如何识别文档字段。例如：「服务地址」对应接口URL，「入参」对应输入参数"
+          />
         </div>
       )}
 
