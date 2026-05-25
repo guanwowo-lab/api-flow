@@ -5,6 +5,7 @@ export default function ProjectFolderList() {
   const { state, loadProjectFolders, createProjectFolder, deleteProjectFolder, openFolder, dispatch } = useProject()
   const folders = state.projectFolders || []
   const [newName, setNewName] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     if (state.project?.id) loadProjectFolders(state.project.id)
@@ -17,9 +18,10 @@ export default function ProjectFolderList() {
     setNewName('')
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('确定删除该文件夹？文件夹下的所有匹配数据将被清除。')) return
-    await deleteProjectFolder(state.project.id, id)
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    await deleteProjectFolder(state.project.id, deleteTarget.id)
+    setDeleteTarget(null)
   }
 
   return (
@@ -81,7 +83,7 @@ export default function ProjectFolderList() {
                   重命名
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(f.id) }}
+                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(f) }}
                   className="text-red-400 hover:text-red-600 text-xs shrink-0"
                 >
                   删除
@@ -97,6 +99,26 @@ export default function ProjectFolderList() {
           )}
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setDeleteTarget(null)}>
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-96 max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2">确认删除</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              确定要删除文件夹 <strong>"{deleteTarget.name}"</strong> 吗？<br />
+              该文件夹下的所有匹配数据将被<strong className="text-red-500">永久清除</strong>，不可恢复。
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+                取消
+              </button>
+              <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                确认删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
