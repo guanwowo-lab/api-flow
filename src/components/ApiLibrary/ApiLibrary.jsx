@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
 import db from '../../store/db'
+import { extractApis } from '../../engines/apiExtractor'
+import { aiParseDocument } from '../../engines/aiParser'
 
 export default function ApiLibrary() {
   const { state, loadApiFolders, saveApiFolder, deleteApiFolder, dispatch } = useProject()
@@ -142,6 +144,35 @@ function FolderDetail({ folderId }) {
     setDirty(true)
   }
 
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+
+  const handleAiParse = async () => {
+    if (!aiText.trim()) return
+    setAiLoading(true)
+    setAiError('')
+    try {
+      let apis = []
+      if (aiText.trim()) {
+        apis = await aiParseDocument(aiText)
+      }
+      if (apis.length === 0) {
+        setAiError('未识别到接口')
+      } else {
+        setDraftApis((prev) => [...prev, ...apis.map((a) => ({ ...a, children: a.children || [] }))])
+        setDirty(true)
+        setAiOpen(false)
+        setAiText('')
+      }
+    } catch (e) {
+      setAiError(e.message)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!folderId) return
     const folder = await db.apiFolders.get(folderId)
@@ -173,6 +204,9 @@ function FolderDetail({ folderId }) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-medium">{folderName} — 接口列表</h2>
         <div className="flex gap-2">
+          <button onClick={() => setAiOpen(!aiOpen)} className="px-3 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+            🤖 AI智能解析
+          </button>
           <button onClick={addApi} className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
             + 添加接口
           </button>
@@ -185,6 +219,32 @@ function FolderDetail({ folderId }) {
           </button>
         </div>
       </div>
+
+      {aiOpen && (
+        <div className="mb-4 border border-purple-300 rounded-lg bg-purple-50 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-purple-700">🤖 AI 智能解析接口</span>
+            <button onClick={() => setAiOpen(false)} className="text-gray-400 hover:text-gray-600 text-xs">关闭</button>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">
+            粘贴我方 API 文档内容，AI 自动识别接口名称、地址、参数并填充
+          </p>
+          <textarea
+            value={aiText}
+            onChange={(e) => setAiText(e.target.value)}
+            className="w-full h-32 px-3 py-2 border border-gray-300 rounded text-xs font-mono outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+            placeholder="粘贴API文档内容..."
+          />
+          {aiError && <p className="text-red-500 text-xs mt-1">{aiError}</p>}
+          <button
+            onClick={handleAiParse}
+            disabled={aiLoading || !aiText.trim()}
+            className="mt-2 px-4 py-1.5 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50 w-full"
+          >
+            {aiLoading ? 'AI 解析中...' : '开始 AI 解析'}
+          </button>
+        </div>
+      )}
 
       {draftApis.length === 0 ? (
         <div className="text-center py-16 text-gray-400 bg-white rounded-lg border border-dashed border-gray-300">
