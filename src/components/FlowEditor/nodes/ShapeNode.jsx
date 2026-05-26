@@ -5,8 +5,9 @@ const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
   diamond: { background: 'transparent', border: 'none' },
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
-  ellipse: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
+  ellipse: { borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
+  end: { borderRadius: 20, background: '#fef2f2', border: '2px solid #ef4444' },
 }
 
 const handleSize = 8
@@ -18,6 +19,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
   const [dims, setDims] = useState({ w: width || 140, h: height || 50 })
   const def = defaults[data.shape] || defaults.rect
   const isDiamond = data.shape === 'diamond'
+  const isEnd = data.shape === 'end'
   const isCircle = data.shape === 'circle'
   const isSquare = isCircle
   const isEllipse = data.shape === 'ellipse'

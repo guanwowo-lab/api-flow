@@ -138,13 +138,13 @@ export default function SequenceEditor() {
   }
 
   const addShapeNode = (shape, defaultLabel) => {
-    const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 } }
+    const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
     const s = sizes[shape] || { w: 140, h: 50 }
     setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: 200 + Math.random() * 100 }, width: s.w, height: s.h, data: { label: defaultLabel, shape, setNodes } }])
   }
 
   const addStartEndNode = (type) => {
-    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, width: type === 'start' ? 140 : undefined, height: type === 'start' ? 60 : undefined, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'ellipse' : 'rect' } }])
+    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, width: type === 'start' ? 140 : undefined, height: type === 'start' ? 60 : undefined, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'ellipse' : 'end' } }])
   }
 
   const handleAiGenerate = async () => {
