@@ -336,15 +336,18 @@ ${JSON.stringify(clientApis, null, 2)}
                           const flatIn = flattenParams(api.inputParams || [])
                           const flatOut = flattenParams(api.outputParams || [])
                           const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
-                          const existing = mappings[i] || []
-                          const updated = existing.map(m => {
-                            const match = allP.find(p => p._key === m.clientParam && p.paramType === m.paramType)
-                            if (match) return { ...m, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]) }
-                            return m
+                          const ourKey = apiKey(apisA[apiIdx])
+                          setMappings(prev => {
+                            const existing = prev[i] || []
+                            const updated = existing.map(m => {
+                              if (allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
+                                return { ...m, ourApiIdx: apiIdx, ourApiKey: ourKey }
+                              return m
+                            })
+                            const missing = allP.filter(p => !existing.some(m => m.clientParam === p._key && m.paramType === p.paramType))
+                            const added = missing.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: ourKey, ourParam: '', status: 'unset' }))
+                            return { ...prev, [i]: [...updated, ...added] }
                           })
-                          const missing = allP.filter(p => !existing.some(m => m.clientParam === p._key && m.paramType === p.paramType))
-                          const added = missing.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]), ourParam: '', status: 'unset' }))
-                          setMappings(prev => ({ ...prev, [i]: [...updated, ...added] }))
                           setDirtyClients(prev => new Set(prev).add(i))
                         }}
                       />
