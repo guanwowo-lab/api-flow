@@ -92,13 +92,16 @@ export default function SequenceEditor() {
   const justLoaded = useRef(true)
 
   const handleSave = async () => {
-    // 直接用当前状态构建数据，不依赖异步的 syncCurrent
-    const updatedDiagrams = diagrams.map((d) =>
-      d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d
-    )
-    setDiagrams(updatedDiagrams)
-    await saveDiagram(state.project.id, state.folder?.id, 'sequence', { diagrams: updatedDiagrams })
-    setSaved(true)
+    try {
+      const updatedDiagrams = diagrams.map((d) =>
+        d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d
+      )
+      setDiagrams(updatedDiagrams)
+      await saveDiagram(state.project.id, state.folder?.id, 'sequence', { diagrams: updatedDiagrams })
+      setSaved(true)
+    } catch (e) {
+      alert('保存失败: ' + (e.message || '未知错误'))
+    }
   }
 
   // 节点、连线、主体变更时标记未保存（跳过画布切换）
