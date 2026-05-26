@@ -98,8 +98,9 @@ export default function SequenceEditor() {
         const isStart = shape === 'start'
         setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - 70, y: pos.y - (isStart?30:25) }, width: 140, height: isStart?60:50, data: { label: isStart?'开始':'结束', shape: isStart?'ellipse':'end' } }])
       } else if (type === 'api') {
+        const apiSide = side === 'our' ? 'A' : 'B'
         const actorIdx = actors.findIndex((a) => a.id === side)
-        setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
+        setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side: apiSide, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
       }
     } catch (err) {
       console.error('Drop failed:', err)

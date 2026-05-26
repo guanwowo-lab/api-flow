@@ -206,7 +206,7 @@ export function ProjectProvider({ children }) {
 
   const saveMatches = useCallback(async (projectId, folderId, matchData) => {
     const existing = await db.matches.where({ folderId }).first()
-    const data = { projectId, folderId, ...matchData }
+    const data = { ...matchData, projectId, folderId }
     if (existing) {
       await db.matches.update(existing.id, data)
       data.id = existing.id

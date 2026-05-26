@@ -105,7 +105,8 @@ ${truncated}`
     throw new Error(`AI 请求失败 (${response.status}): ${errText.slice(0, 300)}`)
   }
 
-  const data = await response.json()
+  let data
+  try { data = await response.json() } catch { throw new Error('AI 返回格式异常，无法解析 JSON 响应') }
   const reply = data?.choices?.[0]?.message?.content || ''
 
   // 从 AI 回复中提取 JSON（支持 markdown 代码块、数组、单个对象）
