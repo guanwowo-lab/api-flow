@@ -11,7 +11,7 @@ const shapeStyles = {
 export default function ShapeNode({ data, selected }) {
   const [label, setLabel] = useState(data.label || '')
   const [editing, setEditing] = useState(false)
-  const style = shapeStyles[data.shape] || shapeStyles.rect
+  const baseStyle = shapeStyles[data.shape] || shapeStyles.rect
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
   const isRect = data.shape === 'rect' || data.shape === 'note'
@@ -24,13 +24,13 @@ export default function ShapeNode({ data, selected }) {
       {(selected || isRect) && <NodeResizer minWidth={60} minHeight={30} keepAspectRatio={isDiamond || isCircle} color="#3b82f6" />}
       <div onDoubleClick={handleDoubleClick}
         style={{
-          ...style,
-          background: style.background || '#f8fafc',
+          ...baseStyle,
+          width: '100%', height: '100%',
+          background: baseStyle.background || '#f8fafc',
           border: `2px solid ${isDiamond ? '#f59e0b' : isCircle ? '#64748b' : '#3b82f6'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', fontSize: 12, fontWeight: 500,
-          width: style.width, height: style.height,
-          minWidth: style.minWidth, minHeight: style.minHeight,
+          minWidth: baseStyle.minWidth, minHeight: baseStyle.minHeight,
         }}
       >
         <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
