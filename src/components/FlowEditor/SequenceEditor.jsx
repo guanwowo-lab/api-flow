@@ -129,7 +129,7 @@ export default function SequenceEditor() {
   const addShapeNode = (shape, defaultLabel) => {
     const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 90, h: 90 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 } }
     const s = sizes[shape] || { w: 140, h: 50 }
-    setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: 200 + Math.random() * 100 }, width: s.w, height: s.h, data: { label: defaultLabel, shape } }])
+    setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: 200 + Math.random() * 100 }, width: s.w, height: s.h, data: { label: defaultLabel, shape, setNodes } }])
   }
 
   const addStartEndNode = (type) => {

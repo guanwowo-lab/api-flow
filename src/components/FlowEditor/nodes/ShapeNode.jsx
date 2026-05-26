@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Handle, Position, useReactFlow } from 'reactflow'
+import { Handle, Position } from 'reactflow'
 
 const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
@@ -13,8 +13,8 @@ const handleSize = 8
 export default function ShapeNode({ id, data, selected, width, height }) {
   const [label, setLabel] = useState(data.label || '')
   const [editing, setEditing] = useState(false)
-  const { setNodes } = useReactFlow()
   const def = defaults[data.shape] || defaults.rect
+  const setNodes = data.setNodes
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
 
