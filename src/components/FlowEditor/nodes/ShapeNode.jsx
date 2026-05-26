@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Handle, Position, NodeResizer } from 'reactflow'
-import 'reactflow/dist/style.css'
+import '@reactflow/node-resizer/dist/style.css'
 
 const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
