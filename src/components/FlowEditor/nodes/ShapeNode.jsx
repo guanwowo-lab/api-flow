@@ -1,66 +1,61 @@
 import { useState } from 'react'
 import { Handle, Position, NodeResizer } from 'reactflow'
+import 'reactflow/dist/style.css'
 
 const defaults = {
-  rect: { borderRadius: 6, minWidth: 120, minHeight: 40 },
-  diamond: { borderRadius: 4 },
-  circle: {},
-  note: { borderRadius: '2px 2px 2px 16px', minWidth: 100, minHeight: 40, background: '#fef9c3', border: '1px solid #eab308' },
+  rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
+  diamond: { borderRadius: 6, background: '#f8fafc', border: '2px solid #f59e0b', transform: 'rotate(45deg)' },
+  circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
+  note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
 }
 
-export default function ShapeNode({ data, selected }) {
+export default function ShapeNode({ data, selected, width, height }) {
   const [label, setLabel] = useState(data.label || '')
   const [editing, setEditing] = useState(false)
   const def = defaults[data.shape] || defaults.rect
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
-  const isFlex = data.shape === 'rect' || data.shape === 'note'
+
+  const w = width || def.width || 140
+  const h = height || def.height || 50
+  const size = `${w}px`
+  const dims = { width: size, height: size }
 
   const handleDoubleClick = () => setEditing(true)
   const finishEdit = () => { setEditing(false); data.label = label }
 
-  const borderColor = isDiamond ? '#f59e0b' : isCircle ? '#64748b' : '#3b82f6'
-
   return (
-    <div style={{ position: 'relative', minWidth: def.minWidth || 60, minHeight: def.minHeight || 30 }}>
-      {(selected || isFlex) && <NodeResizer minWidth={60} minHeight={30} keepAspectRatio={isDiamond || isCircle} color="#3b82f6" />}
-      <div onDoubleClick={handleDoubleClick}
-        style={{
-          ...def,
-          width: '100%', height: '100%',
-          background: def.background || '#f8fafc',
-          border: def.border || `2px solid ${borderColor}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', fontSize: 12, fontWeight: 500,
-          ...(isDiamond ? { transform: 'rotate(45deg)' } : {}),
-          ...(isCircle ? { borderRadius: '50%' } : {}),
-        }}
-      >
-        <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
-        <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8' }} />
-        <Handle type="target" position={Position.Left} style={{ background: '#94a3b8' }} />
-        <Handle type="source" position={Position.Right} style={{ background: '#94a3b8' }} />
+    <div style={{
+      ...dims,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      ...def,
+      cursor: 'pointer', fontSize: 12, fontWeight: 500, position: 'relative',
+      boxSizing: 'border-box',
+    }}>
+      <NodeResizer minWidth={60} minHeight={30} color="#3b82f6" />
+      <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8' }} />
+      <Handle type="target" position={Position.Left} style={{ background: '#94a3b8' }} />
+      <Handle type="source" position={Position.Right} style={{ background: '#94a3b8' }} />
 
-        {editing ? (
-          <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
-            onBlur={finishEdit} onKeyDown={(e) => { if (e.key === 'Enter') finishEdit() }}
-            style={{
-              ...(isDiamond ? { transform: 'rotate(-45deg)', width: '70%' } : {}),
-              ...(isCircle ? { width: '70%', textAlign: 'center' } : { width: '90%' }),
-              background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 12, fontWeight: 500, textAlign: 'center',
-            }}
-          />
-        ) : (
-          <span style={{
+      {editing ? (
+        <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
+          onBlur={finishEdit} onKeyDown={(e) => { if (e.key === 'Enter') finishEdit() }}
+          style={{
             ...(isDiamond ? { transform: 'rotate(-45deg)' } : {}),
-            textAlign: 'center', wordBreak: 'break-word',
-            maxWidth: '90%',
-          }}>
-            {label || '双击编辑'}
-          </span>
-        )}
-      </div>
+            width: '80%', textAlign: 'center',
+            background: 'transparent', border: 'none', outline: 'none',
+            fontSize: 12, fontWeight: 500,
+          }}
+        />
+      ) : (
+        <span onClick={handleDoubleClick} style={{
+          ...(isDiamond ? { transform: 'rotate(-45deg)' } : {}),
+          textAlign: 'center', wordBreak: 'break-word', maxWidth: '85%',
+        }}>
+          {label || '双击编辑'}
+        </span>
+      )}
     </div>
   )
 }
