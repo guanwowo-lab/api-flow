@@ -25,31 +25,7 @@ export default function MatchPanel() {
   const [dirtyClients, setDirtyClients] = useState(new Set())
   const remarkCache = useRef({})
 
-  // ====== effects 放在所有变量声明之后 ======
   useEffect(() => { loadApiFolders() }, [])
-
-  const migratedRef = useRef(false)
-  useEffect(() => {
-    if (migratedRef.current || apisA.length === 0) return
-    let migrated = false
-    const newMappings = { ...mappings }
-    for (const key of Object.keys(newMappings)) {
-      const list = newMappings[key] || []
-      const updated = list.map((m) => {
-        if (!m.ourApiKey && m.ourApiIdx >= 0 && apisA[m.ourApiIdx]) {
-          migrated = true
-          return { ...m, ourApiKey: apiKey(apisA[m.ourApiIdx]) }
-        }
-        return m
-      })
-      if (migrated) newMappings[key] = updated
-    }
-    if (migrated) {
-      setMappings(newMappings)
-      saveMatches(state.project.id, state.folder?.id, { mappings: newMappings })
-      migratedRef.current = true
-    }
-  }, [apisA])
 
   const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
