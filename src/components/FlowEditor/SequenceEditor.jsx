@@ -148,7 +148,7 @@ export default function SequenceEditor() {
     const actorIdx = actors.findIndex((a) => a.id === actorId)
     const x = actorIdx >= 0 ? actorX(actorIdx) + 40 : 300
     const y = 80 + index * 110
-    setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x, y }, width: 20, height: 20, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
+    setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x, y }, width: 40, height: 40, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
   }
 
   const addShapeNode = (shape, defaultLabel) => {
