@@ -184,7 +184,7 @@ export default function SequenceEditor() {
       {actorEditOpen && (
         <div className="mx-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs">
           <div className="flex items-center justify-between mb-2"><span className="font-medium text-amber-700">👥 流程主体配置</span><button onClick={() => setActorEditOpen(false)} className="text-gray-400 hover:text-gray-600">关闭</button></div>
-          <div className="flex flex-wrap gap-2 mb-3">{actors.map((a) => (<span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 rounded text-white text-xs" style={{ background: a.color }}><input value={a.name} onChange={(e) => setActors(actors.map((x) => x.id === a.id ? { ...x, name: e.target.value } : x))} className="bg-transparent border-b border-white/30 outline-none w-20 text-white text-xs" /><span className="flex gap-0.5">{['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'].map((c) => (<button key={c} onClick={() => setActors(actors.map((x) => x.id === a.id ? { ...x, color: c } : x))} className="w-3.5 h-3.5 rounded-full border border-white/40" style={{ background: c, outline: a.color===c?'2px solid white':'none', outlineOffset: 1 }} />))}</span>{actors.length > 1 && <button onClick={() => setActors(actors.filter((x) => x.id !== a.id))} className="opacity-60 hover:opacity-100">&times;</button>}</span>))}</div>
+          <div className="flex flex-wrap gap-2 mb-3">{actors.map((a) => (<span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 rounded text-white text-xs" style={{ background: a.color }}><input value={a.name} onChange={(e) => setActors(actors.map((x) => x.id === a.id ? { ...x, name: e.target.value } : x))} className="bg-transparent border-b border-white/30 outline-none w-20 text-white text-xs" /><ColorPicker color={a.color} onChange={(c) => setActors(actors.map((x) => x.id === a.id ? { ...x, color: c } : x))} />{actors.length > 1 && <button onClick={() => setActors(actors.filter((x) => x.id !== a.id))} className="opacity-60 hover:opacity-100">&times;</button>}</span>))}</div>
           <div className="flex gap-2 mb-3 items-center"><span className="text-gray-500 text-xs">泳道高度:</span><input type="range" min={400} max={3000} step={100} value={swimlaneHeight} onChange={(e) => setSwimlaneHeight(Number(e.target.value))} className="flex-1" /><span className="text-gray-500 text-xs w-10">{swimlaneHeight}</span></div>
           <div className="flex gap-2"><input value={newActorName} onChange={(e) => setNewActorName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addActor()} className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs outline-none" placeholder="新主体名称" /><button onClick={addActor} disabled={!newActorName.trim()} className="px-3 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 disabled:opacity-50">添加</button></div>
         </div>
@@ -255,5 +255,24 @@ export default function SequenceEditor() {
         )}
       </div>
     </div>
+  )
+}
+
+function ColorPicker({ color, onChange }) {
+  const [open, setOpen] = useState(false)
+  const colors = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#64748b','#06b6d4']
+  return (
+    <span className="relative inline-flex">
+      <button onClick={() => setOpen(!open)} className="w-4 h-4 rounded-full border border-white/40" style={{ background: color }} />
+      {open && (
+        <span className="absolute top-full left-0 mt-1 bg-white rounded shadow-lg p-1.5 flex gap-1 z-20" onMouseLeave={() => setOpen(false)}>
+          {colors.map((c) => (
+            <button key={c} onClick={() => { onChange(c); setOpen(false) }}
+              className="w-4 h-4 rounded-full border border-gray-300 hover:scale-125 transition-transform"
+              style={{ background: c, outline: color===c?'2px solid #3b82f6':'none', outlineOffset: 1 }} />
+          ))}
+        </span>
+      )}
+    </span>
   )
 }
