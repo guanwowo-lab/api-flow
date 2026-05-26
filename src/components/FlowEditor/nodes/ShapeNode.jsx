@@ -96,14 +96,14 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       ...def, cursor: 'pointer', fontSize: 12, fontWeight: 500,
       position: 'relative', boxSizing: 'border-box',
     }}>
-      <Handle type="source" id="t-s" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, pointerEvents: (data.connectMode || selected) ? 'auto' : 'none' }} />
-      <Handle type="target" id="t-t" position={Position.Top} style={{ background: 'transparent', width: 20, height: 20, top: -10, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 10 }} />
-      <Handle type="source" id="b-s" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, pointerEvents: (data.connectMode || selected) ? 'auto' : 'none' }} />
-      <Handle type="target" id="b-t" position={Position.Bottom} style={{ background: 'transparent', width: 20, height: 20, bottom: -10, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 10 }} />
-      <Handle type="source" id="l-s" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, pointerEvents: (data.connectMode || selected) ? 'auto' : 'none' }} />
-      <Handle type="target" id="l-t" position={Position.Left} style={{ background: 'transparent', width: 20, height: 20, left: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 10 }} />
-      <Handle type="source" id="r-s" position={Position.Right} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, pointerEvents: (data.connectMode || selected) ? 'auto' : 'none' }} />
-      <Handle type="target" id="r-t" position={Position.Right} style={{ background: 'transparent', width: 20, height: 20, right: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 10 }} />
+      <Handle type="source" id="t-s" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, zIndex: 1 }} />
+      <Handle type="target" id="t-t" position={Position.Top} style={{ background: 'rgba(255,0,0,0.01)', width: 30, height: 30, top: -15, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 5 }} />
+      <Handle type="source" id="b-s" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, zIndex: 1 }} />
+      <Handle type="target" id="b-t" position={Position.Bottom} style={{ background: 'rgba(255,0,0,0.01)', width: 30, height: 30, bottom: -15, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 5 }} />
+      <Handle type="source" id="l-s" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, zIndex: 1 }} />
+      <Handle type="target" id="l-t" position={Position.Left} style={{ background: 'rgba(255,0,0,0.01)', width: 30, height: 30, left: -15, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 5 }} />
+      <Handle type="source" id="r-s" position={Position.Right} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0, zIndex: 1 }} />
+      <Handle type="target" id="r-t" position={Position.Right} style={{ background: 'rgba(255,0,0,0.01)', width: 30, height: 30, right: -15, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 5 }} />
 
       {selected && (<>{corner('nw')}{corner('ne')}{corner('sw')}{corner('se')}</>)}
 
