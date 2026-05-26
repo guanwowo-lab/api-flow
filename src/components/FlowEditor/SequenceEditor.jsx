@@ -189,7 +189,7 @@ export default function SequenceEditor() {
   if (!current) return <div className="p-8 text-center text-gray-400">加载中...</div>
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       <div className="flex items-center gap-3 p-3 bg-white border-b">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-500 hover:text-gray-700 text-sm">{sidebarOpen ? '◀' : '▶'}</button>
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'match' })} className="text-gray-500 hover:text-gray-700 text-sm">&larr; 返回</button>
@@ -222,7 +222,7 @@ export default function SequenceEditor() {
 
       <div className="flex-1 flex">
         {sidebarOpen && (
-          <div className="w-48 bg-white border-r border-gray-200 p-3 overflow-y-auto shrink-0"
+          <div className="w-48 bg-white border-r border-gray-200 p-3 overflow-y-auto shrink-0 overscroll-contain"
             onWheel={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-gray-500">流程图列表</span>
@@ -265,7 +265,7 @@ export default function SequenceEditor() {
         </div>
 
         {paletteOpen && (
-          <div className="w-44 bg-white border-l border-gray-200 p-2 overflow-y-auto shrink-0 text-xs"
+          <div className="w-44 bg-white border-l border-gray-200 p-2 overflow-y-auto shrink-0 text-xs overscroll-contain"
             onWheel={(e) => e.stopPropagation()}>
             <div className="text-gray-400 font-medium mb-2 px-1">图形节点</div>
             <button onClick={() => addShapeNode('rect', '处理步骤')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📦 矩形框</button>
