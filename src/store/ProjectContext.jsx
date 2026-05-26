@@ -25,12 +25,14 @@ function reducer(state, action) {
     case 'SET_PROJECT_LIST':
       return { ...state, projectList: action.payload }
     case 'SET_EXTRACT':
+      if (!action.payload) return action.side === 'A' ? { ...state, extractA: null } : { ...state, extractB: null }
       return action.payload.side === 'A'
         ? { ...state, extractA: action.payload }
         : { ...state, extractB: action.payload }
     case 'SET_MATCHES':
       return { ...state, matches: action.payload }
     case 'SET_DIAGRAM':
+      if (!action.payload) return state
       return action.payload.type === 'sequence'
         ? { ...state, sequenceDiagram: action.payload }
         : { ...state, mappingDiagram: action.payload }
@@ -168,7 +170,7 @@ export function ProjectProvider({ children }) {
     if (extractA) dispatch({ type: 'SET_EXTRACT', payload: extractA })
     else dispatch({ type: 'SET_EXTRACT', payload: { projectId: folder.projectId, folderId: folder.id, side: 'A', apis: [] } })
     if (extractB) dispatch({ type: 'SET_EXTRACT', payload: extractB })
-    else dispatch({ type: 'SET_EXTRACT', payload: null })
+    else dispatch({ type: 'SET_EXTRACT', payload: null, side: 'B' })
 
     const matches = await db.matches.where({ folderId: folder.id }).first()
     if (matches) dispatch({ type: 'SET_MATCHES', payload: matches })
