@@ -94,10 +94,14 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       ...def, cursor: 'pointer', fontSize: 12, fontWeight: 500,
       position: 'relative', boxSizing: 'border-box',
     }}>
-      <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
-      <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8' }} />
-      <Handle type="target" position={Position.Left} style={{ background: '#94a3b8' }} />
-      <Handle type="source" position={Position.Right} style={{ background: '#94a3b8' }} />
+      <Handle type="target" position={Position.Top} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Top} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Bottom} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Left} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Left} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="target" position={Position.Right} style={{ background: '#3b82f6', width: 8, height: 8 }} />
+      <Handle type="source" position={Position.Right} style={{ background: '#3b82f6', width: 8, height: 8 }} />
 
       {selected && (<>{corner('nw')}{corner('ne')}{corner('sw')}{corner('se')}</>)}
 
