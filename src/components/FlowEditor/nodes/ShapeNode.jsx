@@ -47,7 +47,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       if (r.dir.includes('s')) nh = Math.max(20, r.startH + dy)
       if (r.dir.includes('n')) nh = Math.max(20, r.startH - dy)
       if (isSquare) { const s = Math.min(nw, nh); nw = s; nh = s }
-      setNodes((nds) => nds.map((n) => n.id === id ? { ...n, width: nw, height: nh, style: { ...n.style, width: nw, height: nh } } : n))
+      if (setNodes) setNodes((nds) => nds.map((n) => n.id === id ? { ...n, width: nw, height: nh } : n))
     }
     const onUp = () => {
       if (resizeRef.current.dir) { resizeRef.current.dir = ''; document.body.style.cursor = '' }
