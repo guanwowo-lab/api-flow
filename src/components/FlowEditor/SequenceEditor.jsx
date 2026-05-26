@@ -233,6 +233,7 @@ export default function SequenceEditor() {
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView fitViewOptions={{ padding: 0.3 }}
+            zoomOnScroll={false} panOnScroll={false}
             deleteKeyCode={['Backspace', 'Delete']}
             multiSelectionKeyCode="Shift"
           ><Controls /><Background /><MiniMap /></ReactFlow>
