@@ -280,7 +280,7 @@ export default function SequenceEditor() {
             nodeTypes={nodeTypes}
             fitView fitViewOptions={{ padding: 0.3 }}
             zoomOnScroll={false} panOnScroll={false}
-            snapToGrid={true} snapGrid={[20, 20]}
+            snapToGrid={true} snapGrid={[5, 5]}
             deleteKeyCode={['Backspace', 'Delete']}
             multiSelectionKeyCode="Shift"
           ><Controls /><Background /><MiniMap /></ReactFlow>
