@@ -286,7 +286,6 @@ ${pairDesc}
       <div className="flex-1">
         <ReactFlow
           nodes={[
-            // 泳道背景
             ...actors.map((a, i) => ({
               id: `swimlane-${a.id}`,
               type: 'swimlane',
@@ -295,17 +294,17 @@ ${pairDesc}
               height: 2000,
               draggable: false,
               selectable: false,
+              focusable: false,
               zIndex: -1,
               data: { bgColor: `${a.color}15`, borderColor: a.color },
-              style: { pointerEvents: 'none' },
             })),
-            // 主体标签
             ...actors.map((a, i) => ({
               id: `actor-${a.id}`,
               type: 'default',
               position: { x: actorX(i) + 60, y: 0 },
               draggable: false,
               selectable: false,
+              focusable: false,
               data: { label: a.name },
               style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 },
             })),
@@ -318,6 +317,8 @@ ${pairDesc}
           nodeTypes={nodeTypes}
           fitView
           fitViewOptions={{ padding: 0.3 }}
+          deleteKeyCode={['Backspace', 'Delete']}
+          multiSelectionKeyCode="Shift"
         >
           <Controls />
           <Background />
