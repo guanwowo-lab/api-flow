@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect, useRef } from 'react'
 import ReactFlow, {
   Controls, Background, MiniMap,
   addEdge, useNodesState, useEdgesState,
-  MarkerType, useReactFlow,
+  MarkerType,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useProject } from '../../store/ProjectContext'
@@ -36,15 +36,18 @@ export default function SequenceEditor() {
   const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
-  const rf = useReactFlow()
+  const rfRef = useRef(null)
 
-  // 获取当前视口中心位置
   const viewportCenter = () => {
-    const vp = rf.getViewport()
-    const el = document.querySelector('.react-flow__viewport')
-    const w = el?.clientWidth || 800
-    const h = el?.clientHeight || 600
-    return { x: (-vp.x + w / 2) / vp.zoom, y: (-vp.y + h / 2) / vp.zoom }
+    const rf = rfRef.current
+    if (!rf) return { x: 400, y: 200 }
+    try {
+      const vp = rf.getViewport()
+      const el = document.querySelector('.react-flow__viewport')
+      const w = el?.clientWidth || 800
+      const h = el?.clientHeight || 600
+      return { x: (-vp.x + w / 2) / vp.zoom, y: (-vp.y + h / 2) / vp.zoom }
+    } catch { return { x: 400, y: 200 } }
   }
 
   // 挂载时禁止页面滚动，卸载时恢复
@@ -280,6 +283,7 @@ export default function SequenceEditor() {
 
         <div className="flex-1">
           <ReactFlow
+            onInit={(instance) => { rfRef.current = instance }}
             nodes={[
               ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: a.width || 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name, height: swimlaneHeight, width: a.width || 240 } })),
               ...actors.map((a, i) => ({ id: `actor-${a.id}`, type: 'default', position: { x: actorX(i) + 60, y: 0 }, draggable: false, selectable: false, focusable: false, data: { label: a.name }, style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 } })),
