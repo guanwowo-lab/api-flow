@@ -189,7 +189,7 @@ export default function SequenceEditor() {
   if (!current) return <div className="p-8 text-center text-gray-400">加载中...</div>
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col">
       <div className="flex items-center gap-3 p-3 bg-white border-b">
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-gray-500 hover:text-gray-700 text-sm">{sidebarOpen ? '◀' : '▶'}</button>
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'match' })} className="text-gray-500 hover:text-gray-700 text-sm">&larr; 返回</button>
