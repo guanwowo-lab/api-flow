@@ -53,7 +53,7 @@ export default function SequenceEditor() {
   useEffect(() => { syncCurrent() }, [syncCurrent])
 
   // 切换画布
-  const switchDiagram = (id) => {
+  const doSwitch = (id) => {
     syncCurrent()
     const d = diagrams.find((x) => x.id === id)
     if (d) {
@@ -63,6 +63,11 @@ export default function SequenceEditor() {
       setActors(d.actors || defaultActors)
       setSwimlaneHeight(d.swimlaneHeight || 1200)
     }
+  }
+
+  const switchDiagram = (id) => {
+    justLoaded.current = true
+    doSwitch(id)
   }
 
   const createDiagram = () => {
@@ -92,17 +97,20 @@ export default function SequenceEditor() {
   }
 
   const [saved, setSaved] = useState(true)
+  const justLoaded = useRef(true)
 
   const handleSave = async () => {
     syncCurrent()
     const data = { diagrams }
     await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
     setSaved(true)
-    setTimeout(() => setSaved(true), 2000)
   }
 
-  // 任何节点、连线、主体变更都标记未保存
-  useEffect(() => { setSaved(false) }, [nodes, edges, actors, swimlaneHeight])
+  // 节点、连线、主体变更时标记未保存（跳过画布切换）
+  useEffect(() => {
+    if (justLoaded.current) { justLoaded.current = false; return }
+    setSaved(false)
+  }, [nodes, edges, actors, swimlaneHeight])
 
   const [aiGenOpen, setAiGenOpen] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
