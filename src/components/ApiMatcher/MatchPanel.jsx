@@ -324,6 +324,7 @@ ${JSON.stringify(clientApis, null, 2)}
                       clientApi={api}
                       clientIdx={i}
                       apisA={apisA}
+                      apiKeyMap={apiKeyMap}
                       getMapping={(key, type) => getMapping(i, key, type)}
                       setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
                       remarkCache={remarkCache}
@@ -413,7 +414,7 @@ function flattenParams(params, depth = 0, parentKey = '') {
   return result
 }
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMapping, remarkCache, onRemarkDirty }) {
+function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping, setMapping, remarkCache, onRemarkDirty }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
   const flatInput = flattenParams(inputParams)
