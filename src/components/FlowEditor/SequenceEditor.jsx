@@ -131,7 +131,7 @@ export default function SequenceEditor() {
   }
 
   const addStartEndNode = (type) => {
-    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, position: { x: 350, y: type === 'start' ? 10 : 500 }, data: { label: type === 'start' ? '开始' : '结束' }, style: { background: '#f1f5f9', border: '2px solid #64748b', borderRadius: type === 'start' ? '50%' : '8px', padding: '10px 20px', fontWeight: 'bold' } }])
+    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'circle' : 'rect' } }])
   }
 
   const handleAiGenerate = async () => {

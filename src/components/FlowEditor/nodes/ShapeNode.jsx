@@ -21,7 +21,7 @@ export default function ShapeNode({ data, selected }) {
 
   return (
     <div style={{ position: 'relative', minWidth: isRect ? 120 : undefined }}>
-      {(selected || isRect) && <NodeResizer minWidth={60} minHeight={30} color="#3b82f6" />}
+      {(selected || isRect) && <NodeResizer minWidth={60} minHeight={30} keepAspectRatio={isDiamond || isCircle} color="#3b82f6" />}
       <div onDoubleClick={handleDoubleClick}
         style={{
           ...style,
