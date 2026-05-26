@@ -91,11 +91,18 @@ export default function SequenceEditor() {
     }
   }
 
+  const [saved, setSaved] = useState(true)
+
   const handleSave = async () => {
     syncCurrent()
     const data = { diagrams }
     await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
+    setSaved(true)
+    setTimeout(() => setSaved(true), 2000)
   }
+
+  // 任何节点、连线、主体变更都标记未保存
+  useEffect(() => { setSaved(false) }, [nodes, edges, actors, swimlaneHeight])
 
   const [aiGenOpen, setAiGenOpen] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
@@ -178,8 +185,7 @@ export default function SequenceEditor() {
         <button onClick={() => setActorEditOpen(!actorEditOpen)} className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">👥 主体 ({actors.length})</button>
         <button onClick={() => setAiGenOpen(!aiGenOpen)} className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">🤖 AI 生成</button>
         <button onClick={() => setPaletteOpen(!paletteOpen)} className={`px-2 py-1 rounded text-sm ${paletteOpen ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>☰ 节点库</button>
-        <button onClick={() => { if(confirm('确定清除画布上所有节点？')) { setNodes([]); setEdges([]) } }} className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">清空</button>
-        <button onClick={handleSave} className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">保存</button>
+        <button onClick={handleSave} className={`px-3 py-1 rounded text-sm text-white ${saved ? 'bg-green-600' : 'bg-orange-500 hover:bg-orange-600 animate-pulse'}`}>{saved ? '已保存 ✓' : '● 点击保存'}</button>
       </div>
 
       {actorEditOpen && (
