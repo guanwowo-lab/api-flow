@@ -274,6 +274,12 @@ export default function SequenceEditor() {
             <button onClick={() => addShapeNode('note', '备注')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📝 备注</button>
             <button onClick={() => addStartEndNode('start')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">▶ 开始</button>
             <button onClick={() => addStartEndNode('end')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">⏹ 结束</button>
+            <div className="border-t my-2" />
+            <div className="text-gray-400 font-medium mb-1 px-1">我方接口</div>
+            {apisA.map((api, i) => (<button key={`a-${i}`} onClick={() => addApiNode('A', api, i, 'our')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-blue-50 truncate">{api.name || `接口${i + 1}`}</button>))}
+            <div className="border-t my-2" />
+            <div className="text-gray-400 font-medium mb-1 px-1">客户接口</div>
+            {apisB.map((api, i) => (<button key={`b-${i}`} onClick={() => addApiNode('B', api, i, 'client')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-green-50 truncate">{api.name || `接口${i + 1}`}</button>))}
           </div>
         )}
       </div>
