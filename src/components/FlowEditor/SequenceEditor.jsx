@@ -20,28 +20,28 @@ const defaultActors = [
 
 export default function SequenceEditor() {
   const { state, saveDiagram, dispatch } = useProject()
-  const folders = state.apiFolders || []
-  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
+  const folders = Array.isArray(state.apiFolders) ? state.apiFolders : []
+  const apisA = folders.flatMap((f) => (Array.isArray(f.apis) ? f.apis : []).map((a) => ({ ...a })))
   const apisB = state.extractB?.apis || []
   const mappings = state.matches?.mappings || {}
   const savedData = state.sequenceDiagram?.data
 
   // 多画布管理
   const [diagrams, setDiagrams] = useState(() => {
-    if (savedData?.diagrams) return savedData.diagrams
+    if (savedData?.diagrams?.length) return savedData.diagrams
     if (savedData?.nodes) return [{ id: 'd1', name: '默认流程', nodes: savedData.nodes || [], edges: savedData.edges || [], actors: savedData.actors || defaultActors, swimlaneHeight: savedData.swimlaneHeight || 1200 }]
     return [{ id: 'd1', name: '默认流程', nodes: [], edges: [], actors: defaultActors, swimlaneHeight: 1200 }]
   })
   const [currentId, setCurrentId] = useState(diagrams[0]?.id || 'd1')
+  const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
+  if (!current) return <div className="p-8 text-center text-gray-400">加载中...</div>
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
 
-  const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(current?.nodes || [])
-  const [edges, setEdges, onEdgesChange] = useEdgesState(current?.edges || [])
-  const [actors, setActors] = useState(current?.actors || defaultActors)
-  const [swimlaneHeight, setSwimlaneHeight] = useState(current?.swimlaneHeight || 1200)
+  const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
+  const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
+  const [actors, setActors] = useState(current.actors || defaultActors)
+  const [swimlaneHeight, setSwimlaneHeight] = useState(current.swimlaneHeight || 1200)
 
   // 同步当前画布数据到 diagrams
   const syncCurrent = useCallback(() => {
