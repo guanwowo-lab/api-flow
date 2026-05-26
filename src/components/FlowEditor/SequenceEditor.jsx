@@ -133,7 +133,7 @@ export default function SequenceEditor() {
   }
 
   const addStartEndNode = (type) => {
-    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'circle' : 'rect' } }])
+    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, width: type === 'start' ? 140 : undefined, height: type === 'start' ? 60 : undefined, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'ellipse' : 'rect' } }])
   }
 
   const handleAiGenerate = async () => {
@@ -178,6 +178,7 @@ export default function SequenceEditor() {
         <button onClick={() => setActorEditOpen(!actorEditOpen)} className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">👥 主体 ({actors.length})</button>
         <button onClick={() => setAiGenOpen(!aiGenOpen)} className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">🤖 AI 生成</button>
         <button onClick={() => setPaletteOpen(!paletteOpen)} className={`px-2 py-1 rounded text-sm ${paletteOpen ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>☰ 节点库</button>
+        <button onClick={() => { if(confirm('确定清除画布上所有节点？')) { setNodes([]); setEdges([]) } }} className="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">清空</button>
         <button onClick={handleSave} className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">保存</button>
       </div>
 

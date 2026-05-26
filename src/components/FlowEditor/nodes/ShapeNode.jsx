@@ -5,6 +5,7 @@ const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
   diamond: { borderRadius: 6, background: '#f8fafc', border: '2px solid #f59e0b', transform: 'rotate(45deg)' },
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
+  ellipse: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
 }
 
@@ -19,6 +20,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
   const isSquare = isCircle || isDiamond
+  const isEllipse = data.shape === 'ellipse'
   const dw = isSquare ? Math.min(dims.w, dims.h) : dims.w
   const dh = isSquare ? Math.min(dims.w, dims.h) : dims.h
 
