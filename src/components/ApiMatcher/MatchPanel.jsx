@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
+import { getAiConfig } from '../../engines/aiParser'
 
 export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
@@ -93,6 +94,86 @@ export default function MatchPanel() {
     dispatch({ type: 'SET_VIEW', payload: 'sequence' })
   }
 
+  const [aiMatchOpen, setAiMatchOpen] = useState(false)
+  const [aiMatchLoading, setAiMatchLoading] = useState(false)
+  const [aiMatchError, setAiMatchError] = useState('')
+
+  const handleAiMatch = async () => {
+    setAiMatchLoading(true)
+    setAiMatchError('')
+    try {
+      // 构建我方和客户接口信息
+      const ourApis = apisA.map((a, i) => ({
+        idx: i, name: a.name, url: a.url, method: a.method,
+        inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
+        outputParams: flattenParams(a.outputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, desc: p.description })),
+      }))
+      const clientApis = apisB.map((a, i) => ({
+        idx: i, name: a.name, url: a.url, method: a.method,
+        inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
+        outputParams: flattenParams(a.outputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, desc: p.description })),
+      }))
+
+      const config = getAiConfig()
+      const prompt = `你是一个API参数匹配专家。请将客户API的参数映射到我方API的参数。
+
+我方API（可用的接口和字段）：
+${JSON.stringify(ourApis, null, 2)}
+
+客户API（需要匹配的接口和字段）：
+${JSON.stringify(clientApis, null, 2)}
+
+请为每个客户API的每个参数寻找最佳匹配。返回JSON数组（只返回JSON，不要解释）：
+[{
+  "clientIdx": 客户API的idx,
+  "paramKey": "参数的key",
+  "paramType": "input或output",
+  "ourApiIdx": 我方API的idx（找不到填-1）,
+  "ourParam": "我方字段名（用key的最后一段，如userInfo.address.city则填city）",
+  "status": "matched或missing",
+  "remark": "匹配说明"
+}]
+
+匹配规则：
+1. 根据参数名称、类型、描述的语义相似度来匹配
+2. 能匹配到的status填"matched"，找不到的填"missing"
+3. ourApiIdx用我方API的idx值
+4. 为我方参数列表中确实存在的字段
+5. 完整覆盖每个客户参数，不要遗漏`
+
+      const resp = await fetch(`${config.baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
+        body: JSON.stringify({ model: config.model, max_tokens: 16384, temperature: 0.1, messages: [{ role: 'user', content: prompt }] }),
+      })
+      if (!resp.ok) throw new Error(`AI请求失败 (${resp.status})`)
+      const data = await resp.json()
+      const reply = data?.choices?.[0]?.message?.content || ''
+      let jsonStr = reply
+      const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (codeBlock) jsonStr = codeBlock[1]
+      const arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
+      if (!arrayMatch) throw new Error('AI返回格式异常')
+      const suggestions = JSON.parse(arrayMatch[0])
+
+      // 填充映射
+      const newMappings = { ...mappings }
+      for (const s of suggestions) {
+        const list = newMappings[s.clientIdx] || []
+        const filtered = list.filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
+        filtered.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: s.ourApiIdx, ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
+        newMappings[s.clientIdx] = filtered
+      }
+      setMappings(newMappings)
+      await saveMatches(state.project.id, state.folder?.id, { mappings: newMappings })
+      setAiMatchOpen(false)
+    } catch (e) {
+      setAiMatchError(e.message)
+    } finally {
+      setAiMatchLoading(false)
+    }
+  }
+
   const handleExport = () => {
     const rows = [['客户接口名称', '字段名称', '类型', '必传', '字段描述', '映射到我方接口', '映射到字段', '状态', '备注']]
 
@@ -139,6 +220,9 @@ export default function MatchPanel() {
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'extract' })}
           className="text-gray-500 hover:text-gray-700">&larr; 返回</button>
         <h1 className="text-xl font-bold">API 匹配</h1>
+        <button onClick={() => setAiMatchOpen(!aiMatchOpen)} className="text-xs text-purple-600 hover:underline">
+          🤖 AI 匹配
+        </button>
         <button onClick={() => dispatch({ type: 'SET_VIEW', payload: 'home' })} className="text-xs text-gray-500 hover:underline">
           🏠 首页
         </button>
@@ -151,6 +235,26 @@ export default function MatchPanel() {
           {totalMatched}/{totalParams} 参数已匹配
         </span>
       </div>
+
+      {aiMatchOpen && (
+        <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium text-purple-700">🤖 AI 智能匹配</span>
+            <button onClick={() => { setAiMatchOpen(false); setAiMatchError('') }} className="text-gray-400 hover:text-gray-600">关闭</button>
+          </div>
+          <p className="text-gray-500 mb-2">
+            AI 会自动分析双方接口参数，将我方API的接口和字段映射到客户API。完成后可在下方查看和调整。
+          </p>
+          {aiMatchError && <p className="text-red-500 mb-2">{aiMatchError}</p>}
+          <button
+            onClick={handleAiMatch}
+            disabled={aiMatchLoading}
+            className="px-4 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50"
+          >
+            {aiMatchLoading ? 'AI 匹配中...' : `开始 AI 匹配（${apisB.length}个客户接口 ↔ ${apisA.length}个我方接口）`}
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-6">
         {/* 左侧：客户 API 列表 */}
