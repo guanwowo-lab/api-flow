@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow'
 
 const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
-  diamond: { background: '#f8fafc', border: '2px solid #f59e0b', clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
+  diamond: { background: '#f8fafc', clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', filter: 'drop-shadow(2px 0 0 #f59e0b) drop-shadow(-2px 0 0 #f59e0b) drop-shadow(0 2px 0 #f59e0b) drop-shadow(0 -2px 0 #f59e0b)' },
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   ellipse: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
