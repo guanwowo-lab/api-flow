@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow'
 
 const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
-  diamond: { borderRadius: 6, background: '#f8fafc', border: '2px solid #f59e0b', transform: 'rotate(45deg)' },
+  diamond: { background: '#f8fafc', border: '2px solid #f59e0b', clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   ellipse: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
@@ -19,7 +19,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
   const def = defaults[data.shape] || defaults.rect
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
-  const isSquare = isCircle || isDiamond
+  const isSquare = isCircle
   const isEllipse = data.shape === 'ellipse'
   const dw = isSquare ? Math.min(dims.w, dims.h) : dims.w
   const dh = isSquare ? Math.min(dims.w, dims.h) : dims.h
@@ -106,9 +106,9 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       {editing ? (
         <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
           onBlur={finishEdit} onKeyDown={(e) => { if (e.key === 'Enter') finishEdit() }}
-          style={{ ...(isDiamond?{transform:'rotate(-45deg)'}:{}), width:'80%', textAlign:'center', background:'transparent', border:'none', outline:'none', fontSize:12, fontWeight:500 }} />
+          style={{ width:'80%', textAlign:'center', background:'transparent', border:'none', outline:'none', fontSize:12, fontWeight:500 }} />
       ) : (
-        <span onClick={handleDoubleClick} style={{ ...(isDiamond?{transform:'rotate(-45deg)'}:{}), textAlign:'center', wordBreak:'break-word', maxWidth:'85%' }}>
+        <span onClick={handleDoubleClick} style={{ textAlign:'center', wordBreak:'break-word', maxWidth:'85%' }}>
           {label || '双击编辑'}
         </span>
       )}
