@@ -33,12 +33,11 @@ export default function SequenceEditor() {
     return [{ id: 'd1', name: '默认流程', nodes: [], edges: [], actors: defaultActors, swimlaneHeight: 1200 }]
   })
   const [currentId, setCurrentId] = useState(diagrams[0]?.id || 'd1')
-  const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
+  const current = diagrams.find((d) => d.id === currentId) || diagrams[0] || { nodes: [], edges: [], actors: defaultActors, swimlaneHeight: 1200 }
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
   const rfRef = useRef(null)
 
-  // 必须在所有使用 setNodes 的回调之前定义
   const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
   const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
 
