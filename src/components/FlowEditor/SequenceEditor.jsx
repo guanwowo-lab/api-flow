@@ -38,6 +38,13 @@ export default function SequenceEditor() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
 
+  // 挂载时禁止页面滚动，卸载时恢复
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
   const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
   const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
   const [actors, setActors] = useState(current.actors || defaultActors)
