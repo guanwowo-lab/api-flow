@@ -7,9 +7,10 @@ export default function MatchPanel() {
 
   useEffect(() => { loadApiFolders() }, [])
 
-  // 迁移旧数据：为缺少 ourApiKey 的映射补充 key
+  // 迁移旧数据（仅运行一次）
+  const migratedRef = useRef(false)
   useEffect(() => {
-    if (apisA.length === 0) return
+    if (migratedRef.current || apisA.length === 0) return
     let migrated = false
     const newMappings = { ...mappings }
     for (const key of Object.keys(newMappings)) {
@@ -26,6 +27,7 @@ export default function MatchPanel() {
     if (migrated) {
       setMappings(newMappings)
       saveMatches(state.project.id, state.folder?.id, { mappings: newMappings })
+      migratedRef.current = true
     }
   }, [apisA])
   const apisB = state.extractB?.apis || []
