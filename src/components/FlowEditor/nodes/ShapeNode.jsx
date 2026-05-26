@@ -96,10 +96,14 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       ...def, cursor: 'pointer', fontSize: 12, fontWeight: 500,
       position: 'relative', boxSizing: 'border-box',
     }}>
-      <Handle id="top" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10, border: '2px solid #fff' }} />
-      <Handle id="bottom" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10, border: '2px solid #fff' }} />
-      <Handle id="left" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10, border: '2px solid #fff' }} />
-      <Handle id="right" position={Position.Right} style={{ background: '#3b82f6', width: 10, height: 10, border: '2px solid #fff' }} />
+      <Handle type="source" id="s-top" position={Position.Top} style={{ background: '#3b82f6', width: 9, height: 9, borderRadius: '50%', top: -5 }} />
+      <Handle type="target" id="t-top" position={Position.Top} style={{ background: '#ef4444', width: 9, height: 9, borderRadius: '50%', top: -5, left: 'calc(50% + 6px)' }} />
+      <Handle type="source" id="s-bottom" position={Position.Bottom} style={{ background: '#3b82f6', width: 9, height: 9, borderRadius: '50%', bottom: -5 }} />
+      <Handle type="target" id="t-bottom" position={Position.Bottom} style={{ background: '#ef4444', width: 9, height: 9, borderRadius: '50%', bottom: -5, left: 'calc(50% + 6px)' }} />
+      <Handle type="source" id="s-left" position={Position.Left} style={{ background: '#3b82f6', width: 9, height: 9, borderRadius: '50%', left: -5 }} />
+      <Handle type="target" id="t-left" position={Position.Left} style={{ background: '#ef4444', width: 9, height: 9, borderRadius: '50%', left: -5, top: 'calc(50% + 6px)' }} />
+      <Handle type="source" id="s-right" position={Position.Right} style={{ background: '#3b82f6', width: 9, height: 9, borderRadius: '50%', right: -5 }} />
+      <Handle type="target" id="t-right" position={Position.Right} style={{ background: '#ef4444', width: 9, height: 9, borderRadius: '50%', right: -5, top: 'calc(50% + 6px)' }} />
 
       {selected && (<>{corner('nw')}{corner('ne')}{corner('sw')}{corner('se')}</>)}
 
