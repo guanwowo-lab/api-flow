@@ -74,32 +74,34 @@ export function ProjectProvider({ children }) {
 
     let folders = await db.projectFolders.where({ projectId: id }).toArray()
 
-    // 自动迁移：如果没有文件夹，但存在旧数据，创建默认文件夹并迁移
-    if (folders.length === 0) {
-      const oldExtractA = await db.apiExtracts.where({ projectId: id, side: 'A' }).filter((e) => !e.folderId).first()
-      const oldExtractB = await db.apiExtracts.where({ projectId: id, side: 'B' }).filter((e) => !e.folderId).first()
-      const oldMatches = await db.matches.where({ projectId: id }).filter((m) => !m.folderId).first()
-      const hasData = oldExtractA || oldExtractB || oldMatches
+    // 幂等迁移：检查是否有遗漏未关联 folderId 的旧记录
+    const hasMigrationWork = async () => {
+      const extract = await db.apiExtracts.where({ projectId: id }).filter((e) => !e.folderId).first()
+      if (extract) return true
+      const match = await db.matches.where({ projectId: id }).filter((m) => !m.folderId).first()
+      if (match) return true
+      const diagram = await db.flowDiagrams.where({ projectId: id }).filter((d) => !d.folderId).first()
+      if (diagram) return true
+      return false
+    }
 
-      if (hasData) {
-        const now = new Date().toISOString()
-        const folderId = await db.projectFolders.add({ projectId: id, name: '默认对接文件夹', createdAt: now, updatedAt: now })
-
-        // 迁移旧数据
-        const tables = [
-          { store: db.apiExtracts, name: 'apiExtracts' },
-          { store: db.matches, name: 'matches' },
-          { store: db.flowDiagrams, name: 'flowDiagrams' },
-        ]
-        for (const { store } of tables) {
-          const docs = await store.where({ projectId: id }).filter((d) => !d.folderId).toArray()
-          for (const doc of docs) {
-            await store.update(doc.id, { folderId })
-          }
-        }
-
-        folders = await db.projectFolders.where({ projectId: id }).toArray()
+    if (await hasMigrationWork()) {
+      const now = new Date().toISOString()
+      // 使用已有文件夹或创建默认文件夹
+      let folderId = folders.length > 0 ? folders[0].id : null
+      if (!folderId) {
+        folderId = await db.projectFolders.add({ projectId: id, name: '默认对接文件夹', createdAt: now, updatedAt: now })
       }
+
+      // 迁移遗漏的旧数据
+      for (const store of [db.apiExtracts, db.matches, db.flowDiagrams]) {
+        const docs = await store.where({ projectId: id }).filter((d) => !d.folderId).toArray()
+        for (const doc of docs) {
+          await store.update(doc.id, { folderId })
+        }
+      }
+
+      folders = await db.projectFolders.where({ projectId: id }).toArray()
     }
 
     dispatch({ type: 'SET_PROJECT_FOLDERS', payload: folders })
@@ -164,17 +166,21 @@ export function ProjectProvider({ children }) {
     const extractA = await db.apiExtracts.where({ folderId: folder.id, side: 'A' }).first()
     const extractB = await db.apiExtracts.where({ folderId: folder.id, side: 'B' }).first()
     if (extractA) dispatch({ type: 'SET_EXTRACT', payload: extractA })
-    else dispatch({ type: 'SET_EXTRACT', payload: { folderId: folder.id, side: 'A', apis: [] } })
+    else dispatch({ type: 'SET_EXTRACT', payload: { projectId: folder.projectId, folderId: folder.id, side: 'A', apis: [] } })
     if (extractB) dispatch({ type: 'SET_EXTRACT', payload: extractB })
+    else dispatch({ type: 'SET_EXTRACT', payload: null })
 
     const matches = await db.matches.where({ folderId: folder.id }).first()
     if (matches) dispatch({ type: 'SET_MATCHES', payload: matches })
+    else dispatch({ type: 'SET_MATCHES', payload: null })
 
     const seq = await db.flowDiagrams.where({ folderId: folder.id, type: 'sequence' }).first()
     if (seq) dispatch({ type: 'SET_DIAGRAM', payload: seq })
+    else dispatch({ type: 'SET_DIAGRAM', payload: null })
 
     const map = await db.flowDiagrams.where({ folderId: folder.id, type: 'mapping' }).first()
     if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
+    else dispatch({ type: 'SET_DIAGRAM', payload: null })
 
     if (extractB && extractB.apis && extractB.apis.length > 0) {
       dispatch({ type: 'SET_VIEW', payload: 'match' })

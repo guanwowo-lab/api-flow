@@ -30,13 +30,16 @@ export default function SequenceEditor() {
   const cleanData = (data) => {
     if (!data) return null
     if (data.diagrams) {
-      data.diagrams = data.diagrams.map((d) => ({
-        ...d,
-        nodes: (d.nodes || []).map((n) => {
-          const { setNodes, connectMode, ...rest } = n.data || {}
-          return { ...n, data: rest }
-        }),
-      }))
+      return {
+        ...data,
+        diagrams: data.diagrams.map((d) => ({
+          ...d,
+          nodes: (d.nodes || []).map((n) => {
+            const { setNodes, connectMode, ...rest } = n.data || {}
+            return { ...n, data: rest }
+          }),
+        })),
+      }
     }
     return data
   }

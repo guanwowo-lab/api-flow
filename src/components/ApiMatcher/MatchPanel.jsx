@@ -52,15 +52,17 @@ export default function MatchPanel() {
   }, [apisA.length])
 
   const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
-    const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
-    const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
-    // 用 API key 代替数组索引存储，防止索引漂移
     const ourApi = apisA[ourApiIdx]
     const ourApiKey = ourApi ? apiKey(ourApi) : ''
-    if (status !== 'unset') {
-      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourApiKey, ourParam, status, remark: existing?.remark || '' })
-    }
-    setMappings((prev) => ({ ...prev, [clientIdx]: list }))
+    setMappings((prev) => {
+      const prevList = prev[clientIdx] || []
+      const existing = prevList.find((m) => m.clientParam === paramKey && m.paramType === paramType)
+      const list = prevList.filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
+      if (status !== 'unset') {
+        list.push({ clientParam: paramKey, paramType, ourApiIdx, ourApiKey, ourParam, status, remark: existing?.remark || '' })
+      }
+      return { ...prev, [clientIdx]: list }
+    })
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
   }
 
@@ -74,16 +76,19 @@ export default function MatchPanel() {
   }
 
   const saveMapping = async (clientIdx) => {
-    // 合并备注缓存到映射数据
     const cache = remarkCache.current
-    const list = (mappings[clientIdx] || []).map((m) => {
-      const key = `${clientIdx}:${m.clientParam}:${m.paramType}`
-      if (cache[key] !== undefined) return { ...m, remark: cache[key] }
-      return m
+    let toSave
+    setMappings((prev) => {
+      const list = (prev[clientIdx] || []).map((m) => {
+        const key = `${clientIdx}:${m.clientParam}:${m.paramType}`
+        if (cache[key] !== undefined) return { ...m, remark: cache[key] }
+        return m
+      })
+      const updated = { ...prev, [clientIdx]: list }
+      toSave = updated
+      return updated
     })
-    const updated = { ...mappings, [clientIdx]: list }
-    setMappings(updated)
-    await saveMatches(state.project.id, state.folder?.id, { mappings: updated })
+    if (toSave) await saveMatches(state.project.id, state.folder?.id, { mappings: toSave })
     setDirtyClients((prev) => {
       const next = new Set(prev)
       next.delete(clientIdx)
@@ -185,17 +190,21 @@ ${JSON.stringify(clientApis, null, 2)}
       if (!arrayMatch) throw new Error('AI返回格式异常')
       const suggestions = JSON.parse(arrayMatch[0])
 
-      // 填充映射
-      const newMappings = { ...mappings }
-      for (const s of suggestions) {
-        const list = newMappings[s.clientIdx] || []
-        const filtered = list.filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
-        const ourA = apisA[s.ourApiIdx]
-        filtered.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: s.ourApiIdx, ourApiKey: ourA ? apiKey(ourA) : '', ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
-        newMappings[s.clientIdx] = filtered
-      }
-      setMappings(newMappings)
-      await saveMatches(state.project.id, state.folder?.id, { mappings: newMappings })
+      // 填充映射 — 使用函数更新器合并到最新状态，避免覆盖并发编辑
+      let toSave
+      setMappings((prev) => {
+        const merged = { ...prev }
+        for (const s of suggestions) {
+          const validIdx = Number.isInteger(s.ourApiIdx) && s.ourApiIdx >= 0 && s.ourApiIdx < apisA.length ? s.ourApiIdx : -1
+          const ourA = validIdx >= 0 ? apisA[validIdx] : null
+          const list = (merged[s.clientIdx] || []).filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
+          list.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: validIdx, ourApiKey: ourA ? apiKey(ourA) : '', ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
+          merged[s.clientIdx] = list
+        }
+        toSave = merged
+        return merged
+      })
+      if (toSave) await saveMatches(state.project.id, state.folder?.id, { mappings: toSave })
       setAiMatchOpen(false)
     } catch (e) {
       setAiMatchError(e.message)

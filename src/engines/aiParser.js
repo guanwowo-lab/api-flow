@@ -12,7 +12,7 @@ export function getAiConfig() {
   }
   return {
     baseUrl,
-    apiKey: localStorage.getItem(STORAGE_KEY_KEY) || 'sk-6371a8cb8f984661b06d029522fc36bf',
+    apiKey: localStorage.getItem(STORAGE_KEY_KEY) || '',
     model: localStorage.getItem(STORAGE_KEY_MODEL) || 'deepseek-v4-pro',
     hint: localStorage.getItem(STORAGE_KEY_HINT) || '',
   }
