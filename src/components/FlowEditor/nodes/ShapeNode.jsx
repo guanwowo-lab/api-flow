@@ -100,7 +100,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       <Handle type="target" id="b-t" position={Position.Bottom} style={{ background: 'transparent', width: 20, height: 20, bottom: -10, left: '50%', transform: 'translateX(-50%)', position: 'absolute' }} />
       <Handle type="target" id="l-t" position={Position.Left} style={{ background: 'transparent', width: 20, height: 20, left: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute' }} />
       <Handle type="target" id="r-t" position={Position.Right} style={{ background: 'transparent', width: 20, height: 20, right: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute' }} />
-      {selected && (
+      {(data.connectMode || selected) && (
         <>
           <Handle type="source" id="t-s" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10 }} />
           <Handle type="source" id="b-s" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10 }} />

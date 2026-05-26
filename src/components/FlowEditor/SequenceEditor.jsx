@@ -110,6 +110,7 @@ export default function SequenceEditor() {
   const [aiGenOpen, setAiGenOpen] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiGenError, setAiGenError] = useState('')
+  const [connectMode, setConnectMode] = useState(false)
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
 
@@ -189,6 +190,7 @@ export default function SequenceEditor() {
         <div className="flex-1" />
         <button onClick={() => setActorEditOpen(!actorEditOpen)} className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">👥 主体 ({actors.length})</button>
         <button onClick={() => setAiGenOpen(!aiGenOpen)} className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">🤖 AI 生成</button>
+        <button onClick={() => setConnectMode(!connectMode)} className={`px-2 py-1 rounded text-sm ${connectMode ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>🔗 连线</button>
         <button onClick={() => setPaletteOpen(!paletteOpen)} className={`px-2 py-1 rounded text-sm ${paletteOpen ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>☰ 节点库</button>
         <button onClick={handleSave} className={`px-3 py-1 rounded text-sm text-white ${saved ? 'bg-green-600' : 'bg-orange-500 hover:bg-orange-600 animate-pulse'}`}>{saved ? '已保存 ✓' : '● 点击保存'}</button>
       </div>
@@ -239,7 +241,7 @@ export default function SequenceEditor() {
             nodes={[
               ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name, height: swimlaneHeight } })),
               ...actors.map((a, i) => ({ id: `actor-${a.id}`, type: 'default', position: { x: actorX(i) + 60, y: 0 }, draggable: false, selectable: false, focusable: false, data: { label: a.name }, style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 } })),
-              ...nodes.map((n) => ({ ...n, data: { ...n.data, setNodes } })),
+              ...nodes.map((n) => ({ ...n, data: { ...n.data, setNodes, connectMode } })),
             ]}
             edges={edges}
             onNodesChange={onNodesChange}
