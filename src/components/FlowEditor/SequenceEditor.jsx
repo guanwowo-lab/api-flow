@@ -266,6 +266,14 @@ export default function SequenceEditor() {
             zoomOnScroll={false} panOnScroll={false}
             snapToGrid={true} snapGrid={[20, 20]}
             deleteKeyCode={['Backspace', 'Delete']}
+            onKeyDown={(e) => {
+              const key = e.key
+              if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(key)) return
+              e.preventDefault()
+              const dx = key === 'ArrowLeft' ? -1 : key === 'ArrowRight' ? 1 : 0
+              const dy = key === 'ArrowUp' ? -1 : key === 'ArrowDown' ? 1 : 0
+              setNodes((nds) => nds.map((n) => n.selected ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } } : n))
+            }}
             multiSelectionKeyCode="Shift"
           ><Controls /><Background /><MiniMap /></ReactFlow>
         </div>
