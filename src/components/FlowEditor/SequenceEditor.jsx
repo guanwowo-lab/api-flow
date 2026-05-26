@@ -49,16 +49,13 @@ export default function SequenceEditor() {
   useEffect(() => {
     const handler = (e) => {
       if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return
-      // 检查当前聚焦元素不是 input/textarea
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return
       e.preventDefault()
-      const dx = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0
-      const dy = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0
-      setNodes((nds) => nds.map((n) => n.selected ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } } : n))
+      setNodes((nds) => nds.map((n) => n.selected ? { ...n, position: { x: n.position.x + (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0), y: n.position.y + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0) } } : n))
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [setNodes])
+  }, [])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
   const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
