@@ -9,8 +9,9 @@ import { useProject } from '../../store/ProjectContext'
 import { aiParseDocument, getAiConfig } from '../../engines/aiParser'
 import ApiNode from './nodes/ApiNode'
 import SwimlaneNode from './nodes/SwimlaneNode'
+import ShapeNode from './nodes/ShapeNode'
 
-const nodeTypes = { apiNode: ApiNode, swimlane: SwimlaneNode }
+const nodeTypes = { apiNode: ApiNode, swimlane: SwimlaneNode, shapeNode: ShapeNode }
 
 export default function SequenceEditor() {
   const { state, saveDiagram, dispatch, loadApiFolders } = useProject()
@@ -70,6 +71,14 @@ export default function SequenceEditor() {
     setNodes((nds) => [
       ...nds,
       { id, type: 'apiNode', position: { x, y }, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '' } },
+    ])
+  }
+
+  const addShapeNode = (shape, defaultLabel) => {
+    const id = `shape-${Date.now()}`
+    setNodes((nds) => [
+      ...nds,
+      { id, type: 'shapeNode', position: { x: 350, y: 200 + Math.random() * 100 }, data: { label: defaultLabel, shape } },
     ])
   }
 
@@ -201,6 +210,14 @@ ${pairDesc}
               + 添加节点
             </button>
             <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg hidden group-hover:block z-10 min-w-[220px] max-h-[60vh] overflow-y-auto">
+              <div className="px-3 py-2 text-xs text-gray-500 font-medium sticky top-0 bg-white border-b">图形节点</div>
+              <button onClick={() => addShapeNode('rect', '处理步骤')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">📦 矩形框</button>
+              <button onClick={() => addShapeNode('diamond', '判断条件')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">🔷 菱形</button>
+              <button onClick={() => addShapeNode('circle', '开始/结束')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">⭕ 圆形</button>
+              <button onClick={() => addShapeNode('note', '备注说明')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">📝 备注</button>
+              <button onClick={() => addStartEndNode('start')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">▶ 开始节点</button>
+              <button onClick={() => addStartEndNode('end')} className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">⏹ 结束节点</button>
+              <div className="border-t" />
               <div className="px-3 py-2 text-xs text-gray-500 font-medium">我方接口 → {actors.find(a => a.id === 'our')?.name || '我方系统'}</div>
               {apisA.map((api, i) => (
                 <button key={`a-${i}`} onClick={() => addApiNode('A', api, i, 'our')}
@@ -216,12 +233,6 @@ ${pairDesc}
                   {api.name || `接口 ${i + 1}`}
                 </button>
               ))}
-              <div className="border-t" />
-              <div className="px-3 py-2 text-xs text-gray-500 font-medium">其他节点</div>
-              <button onClick={() => addStartEndNode('start')}
-                className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">开始节点</button>
-              <button onClick={() => addStartEndNode('end')}
-                className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">结束节点</button>
             </div>
           </div>
 
