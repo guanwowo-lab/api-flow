@@ -50,6 +50,36 @@ export default function SequenceEditor() {
     } catch { return { x: 400, y: 200 } }
   }
 
+  // 拖放节点到画布
+  const onDragOver = useCallback((e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }, [])
+  const onDrop = useCallback((e) => {
+    e.preventDefault()
+    const rf = rfRef.current
+    if (!rf) return
+    const type = e.dataTransfer.getData('application/reactflow-type')
+    const shape = e.dataTransfer.getData('application/reactflow-shape')
+    const side = e.dataTransfer.getData('application/reactflow-side')
+    const indexStr = e.dataTransfer.getData('application/reactflow-index')
+    const label = e.dataTransfer.getData('application/reactflow-label')
+    const method = e.dataTransfer.getData('application/reactflow-method')
+    const url = e.dataTransfer.getData('application/reactflow-url')
+
+    const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY })
+
+    if (type === 'shape') {
+      const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
+      const s = sizes[shape] || { w: 140, h: 50 }
+      setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - s.w/2, y: pos.y - s.h/2 }, width: s.w, height: s.h, data: { label, shape, setNodes } }])
+    } else if (type === 'startend') {
+      const isStart = shape === 'start'
+      setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - 70, y: pos.y - (isStart?30:25) }, width: 140, height: isStart?60:50, data: { label: isStart?'开始':'结束', shape: isStart?'ellipse':'end' } }])
+    } else if (type === 'api') {
+      const idx = parseInt(indexStr) || 0
+      const actorIdx = actors.findIndex((a) => a.id === side)
+      setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
+    }
+  }, [setNodes, actors])
+
   // 挂载时禁止页面滚动，卸载时恢复
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -281,7 +311,7 @@ export default function SequenceEditor() {
           </div>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1" onDragOver={onDragOver} onDrop={onDrop}>
           <ReactFlow
             onInit={(instance) => { rfRef.current = instance }}
             nodes={[
@@ -305,19 +335,23 @@ export default function SequenceEditor() {
 
         {paletteOpen && (
           <div className="w-44 bg-white border-l border-gray-200 p-2 text-xs overscroll-contain" style={{ overflowY: 'auto', height: '100%' }}>
-            <div className="text-gray-400 font-medium mb-2 px-1">图形节点</div>
-            <button onClick={() => addShapeNode('rect', '处理步骤')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📦 矩形框</button>
-            <button onClick={() => addShapeNode('diamond', '判断条件')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">🔷 菱形</button>
-            <button onClick={() => addShapeNode('circle', '标记')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">⭕ 圆形</button>
-            <button onClick={() => addShapeNode('note', '备注')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📝 备注</button>
-            <button onClick={() => addStartEndNode('start')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">▶ 开始</button>
-            <button onClick={() => addStartEndNode('end')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">⏹ 结束</button>
+            <div className="text-gray-400 font-medium mb-2 px-1">图形节点（可拖放）</div>
+            {[{shape:'rect',label:'处理步骤',icon:'📦'},{shape:'diamond',label:'判断条件',icon:'🔷'},{shape:'circle',label:'标记',icon:'⭕'},{shape:'note',label:'备注',icon:'📝'}].map(({shape,label,icon}) => (
+              <button key={shape} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type','shape'); e.dataTransfer.setData('application/reactflow-shape',shape); e.dataTransfer.setData('application/reactflow-label',label); e.dataTransfer.effectAllowed='move' }} onClick={() => addShapeNode(shape, label)} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">{icon} {label}</button>
+            ))}
+            {[{type:'start',label:'开始',icon:'▶'},{type:'end',label:'结束',icon:'⏹'}].map(({type,label,icon}) => (
+              <button key={type} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type','startend'); e.dataTransfer.setData('application/reactflow-shape',type); e.dataTransfer.setData('application/reactflow-label',label); e.dataTransfer.effectAllowed='move' }} onClick={() => addStartEndNode(type)} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">{icon} {label}</button>
+            ))}
             <div className="border-t my-2" />
-            <div className="text-gray-400 font-medium mb-1 px-1">我方接口</div>
-            {apisA.map((api, i) => (<button key={`a-${i}`} onClick={() => addApiNode('A', api, i, 'our')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-blue-50 truncate">{api.name || `接口${i + 1}`}</button>))}
+            <div className="text-gray-400 font-medium mb-1 px-1">我方接口（可拖放）</div>
+            {apisA.map((api, i) => (
+              <button key={`a-${i}`} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type','api'); e.dataTransfer.setData('application/reactflow-side','our'); e.dataTransfer.setData('application/reactflow-index',String(i)); e.dataTransfer.setData('application/reactflow-label',api.name||`接口${i+1}`); e.dataTransfer.setData('application/reactflow-method',api.method||'GET'); e.dataTransfer.setData('application/reactflow-url',api.url||''); e.dataTransfer.effectAllowed='move' }} onClick={() => addApiNode('A', api, i, 'our')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-blue-50 truncate">{api.name || `接口${i + 1}`}</button>
+            ))}
             <div className="border-t my-2" />
-            <div className="text-gray-400 font-medium mb-1 px-1">客户接口</div>
-            {apisB.map((api, i) => (<button key={`b-${i}`} onClick={() => addApiNode('B', api, i, 'client')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-green-50 truncate">{api.name || `接口${i + 1}`}</button>))}
+            <div className="text-gray-400 font-medium mb-1 px-1">客户接口（可拖放）</div>
+            {apisB.map((api, i) => (
+              <button key={`b-${i}`} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type','api'); e.dataTransfer.setData('application/reactflow-side','client'); e.dataTransfer.setData('application/reactflow-index',String(i)); e.dataTransfer.setData('application/reactflow-label',api.name||`接口${i+1}`); e.dataTransfer.setData('application/reactflow-method',api.method||'GET'); e.dataTransfer.setData('application/reactflow-url',api.url||''); e.dataTransfer.effectAllowed='move' }} onClick={() => addApiNode('B', api, i, 'client')} className="block w-full text-left px-2 py-0.5 rounded hover:bg-green-50 truncate">{api.name || `接口${i + 1}`}</button>
+            ))}
           </div>
         )}
       </div>
