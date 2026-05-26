@@ -206,11 +206,11 @@ ${JSON.stringify(clientApis, null, 2)}
       }
     }
 
-    const csv = '﻿' + rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const html = `<html><head><meta charset="UTF-8"></head><body><table border="1">${rows.map((r) => '<tr>' + r.map((c) => `<td>${c}</td>`).join('') + '</tr>').join('')}</table></body></html>`
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `${state.project?.name || '匹配结果'}_${state.folder?.name || ''}.csv`
+    a.href = url; a.download = `${state.project?.name || '匹配结果'}_${state.folder?.name || ''}.xls`
     a.click(); URL.revokeObjectURL(url)
   }
 
