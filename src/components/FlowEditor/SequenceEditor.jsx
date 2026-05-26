@@ -56,27 +56,30 @@ export default function SequenceEditor() {
     e.preventDefault()
     const rf = rfRef.current
     if (!rf) return
-    const type = e.dataTransfer.getData('application/reactflow-type')
-    const shape = e.dataTransfer.getData('application/reactflow-shape')
-    const side = e.dataTransfer.getData('application/reactflow-side')
-    const indexStr = e.dataTransfer.getData('application/reactflow-index')
-    const label = e.dataTransfer.getData('application/reactflow-label')
-    const method = e.dataTransfer.getData('application/reactflow-method')
-    const url = e.dataTransfer.getData('application/reactflow-url')
+    try {
+      const type = e.dataTransfer.getData('application/reactflow-type')
+      const shape = e.dataTransfer.getData('application/reactflow-shape')
+      const side = e.dataTransfer.getData('application/reactflow-side')
+      const indexStr = e.dataTransfer.getData('application/reactflow-index')
+      const label = e.dataTransfer.getData('application/reactflow-label')
+      const method = e.dataTransfer.getData('application/reactflow-method')
+      const url = e.dataTransfer.getData('application/reactflow-url')
 
-    const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY })
+      const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY })
 
-    if (type === 'shape') {
-      const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
-      const s = sizes[shape] || { w: 140, h: 50 }
-      setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - s.w/2, y: pos.y - s.h/2 }, width: s.w, height: s.h, data: { label, shape, setNodes } }])
-    } else if (type === 'startend') {
-      const isStart = shape === 'start'
-      setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - 70, y: pos.y - (isStart?30:25) }, width: 140, height: isStart?60:50, data: { label: isStart?'开始':'结束', shape: isStart?'ellipse':'end' } }])
-    } else if (type === 'api') {
-      const idx = parseInt(indexStr) || 0
-      const actorIdx = actors.findIndex((a) => a.id === side)
-      setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
+      if (type === 'shape') {
+        const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
+        const s = sizes[shape] || { w: 140, h: 50 }
+        setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - s.w/2, y: pos.y - s.h/2 }, width: s.w, height: s.h, data: { label, shape, setNodes } }])
+      } else if (type === 'startend') {
+        const isStart = shape === 'start'
+        setNodes((nds) => [...nds, { id: `${shape}-${Date.now()}`, type: 'shapeNode', position: { x: pos.x - 70, y: pos.y - (isStart?30:25) }, width: 140, height: isStart?60:50, data: { label: isStart?'开始':'结束', shape: isStart?'ellipse':'end' } }])
+      } else if (type === 'api') {
+        const actorIdx = actors.findIndex((a) => a.id === side)
+        setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
+      }
+    } catch (err) {
+      console.error('Drop failed:', err)
     }
   }, [setNodes, actors])
 
