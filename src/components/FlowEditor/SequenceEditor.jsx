@@ -93,8 +93,12 @@ export default function SequenceEditor() {
 
   const handleSave = async () => {
     try {
+      const stripNodeData = (ns) => ns.map((n) => {
+        const { setNodes, connectMode, ...rest } = n.data || {}
+        return { ...n, data: rest }
+      })
       const updatedDiagrams = diagrams.map((d) =>
-        d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d
+        d.id === currentId ? { ...d, nodes: stripNodeData(nodes), edges, actors, swimlaneHeight } : d
       )
       setDiagrams(updatedDiagrams)
       await saveDiagram(state.project.id, state.folder?.id, 'sequence', { diagrams: updatedDiagrams })
