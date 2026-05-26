@@ -3,7 +3,7 @@ import { Handle, Position } from 'reactflow'
 
 const defaults = {
   rect: { borderRadius: 6, background: '#f8fafc', border: '2px solid #3b82f6' },
-  diamond: { background: '#f8fafc', clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)', filter: 'drop-shadow(2px 0 0 #f59e0b) drop-shadow(-2px 0 0 #f59e0b) drop-shadow(0 2px 0 #f59e0b) drop-shadow(0 -2px 0 #f59e0b)' },
+  diamond: { background: 'transparent', border: 'none' },
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   ellipse: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
@@ -94,8 +94,13 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       width: dw, height: dh, minWidth: 30, minHeight: 20,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       ...def, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-      position: 'relative', boxSizing: 'border-box',
+      position: 'relative', boxSizing: 'border-box', overflow: 'visible',
     }}>
+      {isDiamond && (
+        <svg style={{ position: 'absolute', top: -2, left: -2, width: 'calc(100% + 4px)', height: 'calc(100% + 4px)', pointerEvents: 'none', zIndex: -1 }} viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polygon points="50,0 100,50 50,100 0,50" fill="#f8fafc" stroke="#f59e0b" strokeWidth="3" />
+        </svg>
+      )}
       <Handle type="source" id="top" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0 }} />
       <Handle type="source" id="bottom" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0 }} />
       <Handle type="source" id="left" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10, opacity: (data.connectMode || selected) ? 1 : 0 }} />
