@@ -5,9 +5,29 @@ import { getAiConfig } from '../../engines/aiParser'
 export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
 
+  // ====== 所有变量声明放在最前面 ======
+  const apisB = state.extractB?.apis || []
+  const folders = state.apiFolders || []
+  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
+  const apiKey = (api) => (api?.name || '') + '|||' + (api?.url || '')
+  const apiKeyMap = Object.fromEntries(apisA.map((a, i) => [apiKey(a), i]))
+
+  const [mappings, setMappings] = useState(() => {
+    if (state.matches?.mappings) return state.matches.mappings
+    return {}
+  })
+  const [expandedClient, setExpandedClient] = useState(null)
+
+  const getMapping = (clientIdx, paramKey, paramType) => {
+    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
+  }
+
+  const [dirtyClients, setDirtyClients] = useState(new Set())
+  const remarkCache = useRef({})
+
+  // ====== effects 放在所有变量声明之后 ======
   useEffect(() => { loadApiFolders() }, [])
 
-  // 迁移旧数据（仅运行一次）
   const migratedRef = useRef(false)
   useEffect(() => {
     if (migratedRef.current || apisA.length === 0) return
@@ -30,27 +50,6 @@ export default function MatchPanel() {
       migratedRef.current = true
     }
   }, [apisA])
-  const apisB = state.extractB?.apis || []
-  const folders = state.apiFolders || []
-  const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
-
-  // 用 name+url 做稳定标识，防止数组索引漂移
-  const apiKey = (api) => (api?.name || '') + '|||' + (api?.url || '')
-  const apiKeyMap = Object.fromEntries(apisA.map((a, i) => [apiKey(a), i]))
-
-  // mappings: { [clientApiIdx]: [{ clientParam, ourApiIdx, ourParam, status }] }
-  const [mappings, setMappings] = useState(() => {
-    if (state.matches?.mappings) return state.matches.mappings
-    return {}
-  })
-  const [expandedClient, setExpandedClient] = useState(null)
-
-  const getMapping = (clientIdx, paramKey, paramType) => {
-    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
-  }
-
-  const [dirtyClients, setDirtyClients] = useState(new Set())
-  const remarkCache = useRef({})
 
   const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
