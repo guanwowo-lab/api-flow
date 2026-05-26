@@ -291,10 +291,12 @@ ${pairDesc}
               id: `swimlane-${a.id}`,
               type: 'swimlane',
               position: { x: actorX(i), y: 50 },
+              width: 240,
+              height: 2000,
               draggable: false,
               selectable: false,
               zIndex: -1,
-              data: { width: 240, height: 2000, bgColor: `${a.color}08`, borderColor: a.color },
+              data: { bgColor: `${a.color}15`, borderColor: a.color },
             })),
             // 主体标签
             ...actors.map((a, i) => ({
