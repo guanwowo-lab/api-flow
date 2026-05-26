@@ -297,6 +297,7 @@ ${pairDesc}
               selectable: false,
               zIndex: -1,
               data: { bgColor: `${a.color}15`, borderColor: a.color },
+              style: { pointerEvents: 'none' },
             })),
             // 主体标签
             ...actors.map((a, i) => ({
