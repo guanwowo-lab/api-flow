@@ -3,10 +3,8 @@ export default function SwimlaneNode({ data }) {
     <div
       className="pointer-events-none"
       style={{
-        width: '100%',
-        height: '100%',
-        minWidth: 240,
-        minHeight: 500,
+        width: 240,
+        height: data.height || 1200,
         background: data.bgColor || '#f0f0f008',
         borderLeft: `2px dashed ${data.borderColor || '#ccc'}60`,
         borderRight: `2px dashed ${data.borderColor || '#ccc'}60`,

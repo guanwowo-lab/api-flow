@@ -225,7 +225,7 @@ export default function SequenceEditor() {
         <div className="flex-1">
           <ReactFlow
             nodes={[
-              ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name } })),
+              ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name, height: swimlaneHeight } })),
               ...actors.map((a, i) => ({ id: `actor-${a.id}`, type: 'default', position: { x: actorX(i) + 60, y: 0 }, draggable: false, selectable: false, focusable: false, data: { label: a.name }, style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 } })),
               ...nodes.map((n) => ({ ...n, data: { ...n.data, setNodes } })),
             ]}
