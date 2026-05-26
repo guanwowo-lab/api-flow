@@ -245,6 +245,7 @@ export default function SequenceEditor() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            isValidConnection={() => true}
             nodeTypes={nodeTypes}
             fitView fitViewOptions={{ padding: 0.3 }}
             zoomOnScroll={false} panOnScroll={false}
