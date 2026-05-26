@@ -96,14 +96,14 @@ export default function ShapeNode({ id, data, selected, width, height }) {
       ...def, cursor: 'pointer', fontSize: 12, fontWeight: 500,
       position: 'relative', boxSizing: 'border-box',
     }}>
-      <Handle type="source" id="top" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10 }} />
-      <Handle type="target" id="top" position={Position.Top} style={{ background: 'transparent', width: 14, height: 14, position: 'absolute', top: -7, left: '50%', transform: 'translateX(-50%)' }} />
-      <Handle type="source" id="bottom" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10 }} />
-      <Handle type="target" id="bottom" position={Position.Bottom} style={{ background: 'transparent', width: 14, height: 14, position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)' }} />
-      <Handle type="source" id="left" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10 }} />
-      <Handle type="target" id="left" position={Position.Left} style={{ background: 'transparent', width: 14, height: 14, position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)' }} />
-      <Handle type="source" id="right" position={Position.Right} style={{ background: '#3b82f6', width: 10, height: 10 }} />
-      <Handle type="target" id="right" position={Position.Right} style={{ background: 'transparent', width: 14, height: 14, position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)' }} />
+      <Handle type="source" id="t-s" position={Position.Top} style={{ background: '#3b82f6', width: 10, height: 10, zIndex: 1 }} />
+      <Handle type="target" id="t-t" position={Position.Top} style={{ background: 'transparent', width: 20, height: 20, top: -10, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 0 }} />
+      <Handle type="source" id="b-s" position={Position.Bottom} style={{ background: '#3b82f6', width: 10, height: 10, zIndex: 1 }} />
+      <Handle type="target" id="b-t" position={Position.Bottom} style={{ background: 'transparent', width: 20, height: 20, bottom: -10, left: '50%', transform: 'translateX(-50%)', position: 'absolute', zIndex: 0 }} />
+      <Handle type="source" id="l-s" position={Position.Left} style={{ background: '#3b82f6', width: 10, height: 10, zIndex: 1 }} />
+      <Handle type="target" id="l-t" position={Position.Left} style={{ background: 'transparent', width: 20, height: 20, left: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 0 }} />
+      <Handle type="source" id="r-s" position={Position.Right} style={{ background: '#3b82f6', width: 10, height: 10, zIndex: 1 }} />
+      <Handle type="target" id="r-t" position={Position.Right} style={{ background: 'transparent', width: 20, height: 20, right: -10, top: '50%', transform: 'translateY(-50%)', position: 'absolute', zIndex: 0 }} />
 
       {selected && (<>{corner('nw')}{corner('ne')}{corner('sw')}{corner('se')}</>)}
 
