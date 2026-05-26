@@ -38,6 +38,10 @@ export default function SequenceEditor() {
   const [paletteOpen, setPaletteOpen] = useState(true)
   const rfRef = useRef(null)
 
+  // 必须在所有使用 setNodes 的回调之前定义
+  const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
+  const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
+
   const viewportCenter = () => {
     const rf = rfRef.current
     if (!rf) return { x: 400, y: 200 }
@@ -102,8 +106,6 @@ export default function SequenceEditor() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
-  const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
   const [actors, setActors] = useState(current.actors || defaultActors)
   const [swimlaneHeight, setSwimlaneHeight] = useState(current.swimlaneHeight || 1200)
 
