@@ -3,36 +3,49 @@ import { Handle, Position } from 'reactflow'
 
 export default function ApiNode({ data }) {
   const isLeft = data.side === 'A'
-  const [expanded, setExpanded] = useState(data.collapsed ? false : true)
-  const collapsed = !expanded
+  const [showPopup, setShowPopup] = useState(false)
+  const color = isLeft ? '#3b82f6' : '#22c55e'
+  const bg = isLeft ? '#eff6ff' : '#f0fdf4'
+  const border = isLeft ? '#3b82f6' : '#22c55e'
 
-  if (collapsed) {
-    return (
-      <div onClick={() => setExpanded(true)}
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* 小圆点 */}
+      <div onClick={(e) => { e.stopPropagation(); setShowPopup(!showPopup) }}
         style={{
           width: 28, height: 28, borderRadius: '50%',
-          background: isLeft ? '#3b82f6' : '#22c55e',
-          border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          background: color, border: '2px solid #fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10, color: '#fff', fontWeight: 'bold',
         }}
       >
-        <Handle type="target" position={Position.Top} style={{ background: '#94a3b8', width: 6, height: 6 }} />
-        <Handle type="source" position={Position.Bottom} style={{ background: '#94a3b8', width: 6, height: 6 }} />
-        <Handle type="target" position={Position.Left} style={{ background: '#94a3b8', width: 6, height: 6 }} />
-        <Handle type="source" position={Position.Right} style={{ background: '#94a3b8', width: 6, height: 6 }} />
-        {(data.label || 'API')[0]}
+        <Handle type="source" id="t" position={Position.Top} style={{ background: color, width: 6, height: 6 }} />
+        <Handle type="source" id="b" position={Position.Bottom} style={{ background: color, width: 6, height: 6 }} />
+        <Handle type="source" id="l" position={Position.Left} style={{ background: color, width: 6, height: 6 }} />
+        <Handle type="source" id="r" position={Position.Right} style={{ background: color, width: 6, height: 6 }} />
+        {(data.label || 'A')[0]}
       </div>
-    )
-  }
 
-  return (
-    <div onClick={() => setExpanded(false)}
-      className={`px-3 py-1.5 rounded-lg border-2 min-w-[120px] text-xs cursor-pointer ${isLeft ? 'border-blue-400 bg-blue-50' : 'border-green-400 bg-green-50'}`}>
-      <Handle type="target" position={Position.Left} style={{ background: '#94a3b8', width: 6, height: 6 }} />
-      <div className="font-medium">{data.label}</div>
-      <div className="text-[10px] text-gray-500 font-mono">{data.method} {data.url}</div>
-      <Handle type="source" position={Position.Right} style={{ background: '#94a3b8', width: 6, height: 6 }} />
+      {/* 浮窗 */}
+      {showPopup && (
+        <div style={{
+          position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+          background: bg, border: `2px solid ${border}`, borderRadius: 8,
+          padding: '8px 12px', minWidth: 160, zIndex: 1000,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: 12,
+          whiteSpace: 'nowrap',
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 2 }}>{data.label}</div>
+          <div style={{ color: '#666', fontFamily: 'monospace', fontSize: 11 }}>
+            <span style={{
+              display: 'inline-block', background: color, color: '#fff', borderRadius: 3,
+              padding: '0 4px', marginRight: 4, fontSize: 10, fontWeight: 600,
+            }}>{data.method}</span>
+            {data.url}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
