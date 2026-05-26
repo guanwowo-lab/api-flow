@@ -27,6 +27,30 @@ export default function MatchPanel() {
 
   useEffect(() => { loadApiFolders() }, [])
 
+  // 一次性修复：为已有映射补充 ourApiKey（用当前索引对应API生成key）
+  const fixedRef = useRef(false)
+  useEffect(() => {
+    if (fixedRef.current || apisA.length === 0) return
+    let changed = false
+    const updated = { ...mappings }
+    for (const ck of Object.keys(updated)) {
+      const list = updated[ck] || []
+      const newList = list.map((m) => {
+        if (!m.ourApiKey && m.ourApiIdx >= 0 && apisA[m.ourApiIdx]) {
+          changed = true
+          return { ...m, ourApiKey: apiKey(apisA[m.ourApiIdx]) }
+        }
+        return m
+      })
+      if (changed) updated[ck] = newList
+    }
+    if (changed) {
+      setMappings(updated)
+      saveMatches(state.project.id, state.folder?.id, { mappings: updated })
+    }
+    fixedRef.current = true
+  }, [apisA.length])
+
   const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
     const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
