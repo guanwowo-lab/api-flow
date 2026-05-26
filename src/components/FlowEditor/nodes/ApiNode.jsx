@@ -13,7 +13,7 @@ export default function ApiNode({ data }) {
       {/* 小圆点 */}
       <div onClick={(e) => { e.stopPropagation(); setShowPopup(!showPopup) }}
         style={{
-          width: 28, height: 28, borderRadius: '50%',
+          width: 20, height: 20, borderRadius: '50%',
           background: color, border: '2px solid #fff',
           boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
