@@ -493,7 +493,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
                   onChange={(e) => {
                     const val = e.target.value
                     const apiIdx = parseInt(val)
-                    if (apiIdx >= 0) setMapping(pb._key, paramType, apiIdx, '', 'matched')
+                    if (apiIdx >= 0) setMapping(pb._key, paramType, apiIdx, m?.ourParam || '', 'matched')
                     else if (val === '__missing') setMapping(pb._key, paramType, -1, '', 'missing')
                     else setMapping(pb._key, paramType, -1, '', 'unset')
                   }}
