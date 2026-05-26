@@ -2,7 +2,7 @@ import { useCallback, useState, useEffect, useRef } from 'react'
 import ReactFlow, {
   Controls, Background, MiniMap,
   addEdge, useNodesState, useEdgesState,
-  MarkerType,
+  MarkerType, useReactFlow,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useProject } from '../../store/ProjectContext'
@@ -36,6 +36,16 @@ export default function SequenceEditor() {
   const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
+  const rf = useReactFlow()
+
+  // 获取当前视口中心位置
+  const viewportCenter = () => {
+    const vp = rf.getViewport()
+    const el = document.querySelector('.react-flow__viewport')
+    const w = el?.clientWidth || 800
+    const h = el?.clientHeight || 600
+    return { x: (-vp.x + w / 2) / vp.zoom, y: (-vp.y + h / 2) / vp.zoom }
+  }
 
   // 挂载时禁止页面滚动，卸载时恢复
   useEffect(() => {
@@ -161,19 +171,23 @@ export default function SequenceEditor() {
   const addApiNode = (side, api, index, actorId) => {
     const label = side === 'A' ? (api.name || `我方接口 ${index + 1}`) : (api.name || `客户接口 ${index + 1}`)
     const actorIdx = actors.findIndex((a) => a.id === actorId)
-    const x = actorIdx >= 0 ? actorX(actorIdx) + 40 : 300
-    const y = 80 + index * 110
+    const center = viewportCenter()
+    const x = actorIdx >= 0 ? actorX(actorIdx) + 40 : center.x
+    const y = actorIdx >= 0 ? 80 + index * 110 : center.y + index * 40
     setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x, y }, width: 30, height: 30, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
   }
 
   const addShapeNode = (shape, defaultLabel) => {
     const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
     const s = sizes[shape] || { w: 140, h: 50 }
-    setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: 200 + Math.random() * 100 }, width: s.w, height: s.h, data: { label: defaultLabel, shape, setNodes } }])
+    const center = viewportCenter()
+    setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: center.x - s.w / 2 + (Math.random() - 0.5) * 100, y: center.y - s.h / 2 + (Math.random() - 0.5) * 60 }, width: s.w, height: s.h, data: { label: defaultLabel, shape, setNodes } }])
   }
 
   const addStartEndNode = (type) => {
-    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: 350, y: type === 'start' ? 10 : 500 }, width: type === 'start' ? 140 : undefined, height: type === 'start' ? 60 : undefined, data: { label: type === 'start' ? '开始' : '结束', shape: type === 'start' ? 'ellipse' : 'end' } }])
+    const center = viewportCenter()
+    const isStart = type === 'start'
+    setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: center.x - 70, y: center.y + (isStart ? -100 : 80) }, width: 140, height: isStart ? 60 : 50, data: { label: isStart ? '开始' : '结束', shape: isStart ? 'ellipse' : 'end' } }])
   }
 
   const handleAiGenerate = async () => {
