@@ -72,9 +72,9 @@ export default function ShapeNode({ id, data, selected, width, height }) {
         }
       }
     }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('pointerup', onUp)
+    return () => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp) }
   }, [id, data.setNodes, isSquare])
 
   const corner = (dir) => (
