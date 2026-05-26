@@ -26,10 +26,25 @@ export default function SequenceEditor() {
   const mappings = state.matches?.mappings || {}
   const savedData = state.sequenceDiagram?.data
 
-  // 多画布管理
+  // 多画布管理 — 清理不可序列化的数据
+  const cleanData = (data) => {
+    if (!data) return null
+    if (data.diagrams) {
+      data.diagrams = data.diagrams.map((d) => ({
+        ...d,
+        nodes: (d.nodes || []).map((n) => {
+          const { setNodes, connectMode, ...rest } = n.data || {}
+          return { ...n, data: rest }
+        }),
+      }))
+    }
+    return data
+  }
+
   const [diagrams, setDiagrams] = useState(() => {
-    if (savedData?.diagrams?.length) return savedData.diagrams
-    if (savedData?.nodes) return [{ id: 'd1', name: '默认流程', nodes: savedData.nodes || [], edges: savedData.edges || [], actors: savedData.actors || defaultActors, swimlaneHeight: savedData.swimlaneHeight || 1200 }]
+    const cleaned = cleanData(savedData)
+    if (cleaned?.diagrams?.length) return cleaned.diagrams
+    if (cleaned?.nodes) return [{ id: 'd1', name: '默认流程', nodes: (cleaned.nodes || []).map((n) => { const { setNodes: _, connectMode: __, ...rest } = n.data || {}; return { ...n, data: rest } }), edges: cleaned.edges || [], actors: cleaned.actors || defaultActors, swimlaneHeight: cleaned.swimlaneHeight || 1200 }]
     return [{ id: 'd1', name: '默认流程', nodes: [], edges: [], actors: defaultActors, swimlaneHeight: 1200 }]
   })
   const [currentId, setCurrentId] = useState(diagrams[0]?.id || 'd1')
