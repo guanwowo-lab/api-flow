@@ -20,10 +20,10 @@ export default function ApiNode({ data }) {
           fontSize: 12, color: '#fff', fontWeight: 'bold',
         }}
       >
-        <Handle type="source" id="t" position={Position.Top} style={{ background: color, width: 6, height: 6 }} />
-        <Handle type="source" id="b" position={Position.Bottom} style={{ background: color, width: 6, height: 6 }} />
-        <Handle type="source" id="l" position={Position.Left} style={{ background: color, width: 6, height: 6 }} />
-        <Handle type="source" id="r" position={Position.Right} style={{ background: color, width: 6, height: 6 }} />
+        <Handle type="source" id="t" position={Position.Top} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="b" position={Position.Bottom} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="l" position={Position.Left} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="r" position={Position.Right} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
         {(data.label || 'A')[0]}
       </div>
 
