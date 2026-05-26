@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Handle, Position } from 'reactflow'
 
-export default function ApiNode({ data }) {
+export default function ApiNode({ data, selected }) {
   const isLeft = data.side === 'A'
   const [showPopup, setShowPopup] = useState(false)
   const color = isLeft ? '#3b82f6' : '#22c55e'
