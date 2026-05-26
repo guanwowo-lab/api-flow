@@ -1,36 +1,39 @@
 import { useState } from 'react'
 import { Handle, Position, NodeResizer } from 'reactflow'
 
-const shapeStyles = {
-  rect: { borderRadius: 6, minWidth: 120, padding: '10px 20px' },
-  diamond: { transform: 'rotate(45deg)', borderRadius: 4, width: 80, height: 80, padding: 0 },
-  circle: { borderRadius: '50%', width: 90, height: 90, padding: 0 },
-  note: { borderRadius: '2px 2px 2px 16px', minWidth: 100, padding: '10px 16px', background: '#fef9c3', border: '1px solid #eab308' },
+const defaults = {
+  rect: { borderRadius: 6, minWidth: 120, minHeight: 40 },
+  diamond: { borderRadius: 4 },
+  circle: {},
+  note: { borderRadius: '2px 2px 2px 16px', minWidth: 100, minHeight: 40, background: '#fef9c3', border: '1px solid #eab308' },
 }
 
 export default function ShapeNode({ data, selected }) {
   const [label, setLabel] = useState(data.label || '')
   const [editing, setEditing] = useState(false)
-  const baseStyle = shapeStyles[data.shape] || shapeStyles.rect
+  const def = defaults[data.shape] || defaults.rect
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
-  const isRect = data.shape === 'rect' || data.shape === 'note'
+  const isFlex = data.shape === 'rect' || data.shape === 'note'
 
   const handleDoubleClick = () => setEditing(true)
   const finishEdit = () => { setEditing(false); data.label = label }
 
+  const borderColor = isDiamond ? '#f59e0b' : isCircle ? '#64748b' : '#3b82f6'
+
   return (
-    <div style={{ position: 'relative', minWidth: isRect ? 120 : undefined }}>
-      {(selected || isRect) && <NodeResizer minWidth={60} minHeight={30} keepAspectRatio={isDiamond || isCircle} color="#3b82f6" />}
+    <div style={{ position: 'relative', minWidth: def.minWidth || 60, minHeight: def.minHeight || 30 }}>
+      {(selected || isFlex) && <NodeResizer minWidth={60} minHeight={30} keepAspectRatio={isDiamond || isCircle} color="#3b82f6" />}
       <div onDoubleClick={handleDoubleClick}
         style={{
-          ...baseStyle,
+          ...def,
           width: '100%', height: '100%',
-          background: baseStyle.background || '#f8fafc',
-          border: `2px solid ${isDiamond ? '#f59e0b' : isCircle ? '#64748b' : '#3b82f6'}`,
+          background: def.background || '#f8fafc',
+          border: def.border || `2px solid ${borderColor}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', fontSize: 12, fontWeight: 500,
-          minWidth: baseStyle.minWidth, minHeight: baseStyle.minHeight,
+          ...(isDiamond ? { transform: 'rotate(45deg)' } : {}),
+          ...(isCircle ? { borderRadius: '50%' } : {}),
         }}
       >
         <Handle type="target" position={Position.Top} style={{ background: '#94a3b8' }} />
@@ -42,16 +45,17 @@ export default function ShapeNode({ data, selected }) {
           <input autoFocus value={label} onChange={(e) => setLabel(e.target.value)}
             onBlur={finishEdit} onKeyDown={(e) => { if (e.key === 'Enter') finishEdit() }}
             style={{
-              ...(isDiamond ? { transform: 'rotate(-45deg)', width: 70 } : {}),
-              ...(isCircle ? { width: 60, textAlign: 'center' } : {}),
+              ...(isDiamond ? { transform: 'rotate(-45deg)', width: '70%' } : {}),
+              ...(isCircle ? { width: '70%', textAlign: 'center' } : { width: '90%' }),
               background: 'transparent', border: 'none', outline: 'none',
               fontSize: 12, fontWeight: 500, textAlign: 'center',
             }}
           />
         ) : (
           <span style={{
-            ...(isDiamond ? { transform: 'rotate(-45deg)', width: 70 } : {}),
+            ...(isDiamond ? { transform: 'rotate(-45deg)' } : {}),
             textAlign: 'center', wordBreak: 'break-word',
+            maxWidth: '90%',
           }}>
             {label || '双击编辑'}
           </span>
