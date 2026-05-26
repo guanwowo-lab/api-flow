@@ -341,7 +341,7 @@ ${JSON.stringify(clientApis, null, 2)}
                             const existing = prev[i] || []
                             const updated = existing.map(m => {
                               if (allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
-                                return { ...m, ourApiIdx: apiIdx, ourApiKey: ourKey }
+                                return { ...m, ourApiIdx: apiIdx, ourApiKey: ourKey, ourParam: '', remark: m.remark || '' }
                               return m
                             })
                             const missing = allP.filter(p => !existing.some(m => m.clientParam === p._key && m.paramType === p.paramType))
