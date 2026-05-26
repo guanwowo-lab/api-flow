@@ -16,17 +16,19 @@ export default function ShapeNode({ data, selected, width, height }) {
   const isDiamond = data.shape === 'diamond'
   const isCircle = data.shape === 'circle'
 
-  const w = width || def.width || 140
-  const h = height || def.height || 50
-  const size = `${w}px`
-  const dims = { width: size, height: size }
+  const w = width || 140
+  const h = height || 50
 
   const handleDoubleClick = () => setEditing(true)
   const finishEdit = () => { setEditing(false); data.label = label }
 
+  const isSquare = isCircle || isDiamond
+  const dw = isSquare ? Math.min(w, h) : w
+  const dh = isSquare ? Math.min(w, h) : h
+
   return (
     <div style={{
-      ...dims,
+      width: dw, height: dh,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       ...def,
       cursor: 'pointer', fontSize: 12, fontWeight: 500, position: 'relative',
