@@ -190,7 +190,8 @@ ${JSON.stringify(clientApis, null, 2)}
       for (const s of suggestions) {
         const list = newMappings[s.clientIdx] || []
         const filtered = list.filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
-        filtered.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: s.ourApiIdx, ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
+        const ourA = apisA[s.ourApiIdx]
+        filtered.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: s.ourApiIdx, ourApiKey: ourA ? apiKey(ourA) : '', ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
         newMappings[s.clientIdx] = filtered
       }
       setMappings(newMappings)
