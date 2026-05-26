@@ -8,8 +8,9 @@ import 'reactflow/dist/style.css'
 import { useProject } from '../../store/ProjectContext'
 import { aiParseDocument, getAiConfig } from '../../engines/aiParser'
 import ApiNode from './nodes/ApiNode'
+import SwimlaneNode from './nodes/SwimlaneNode'
 
-const nodeTypes = { apiNode: ApiNode }
+const nodeTypes = { apiNode: ApiNode, swimlane: SwimlaneNode }
 
 export default function SequenceEditor() {
   const { state, saveDiagram, dispatch, loadApiFolders } = useProject()
@@ -288,16 +289,12 @@ ${pairDesc}
             // 泳道背景
             ...actors.map((a, i) => ({
               id: `swimlane-${a.id}`,
-              type: 'default',
+              type: 'swimlane',
               position: { x: actorX(i), y: 50 },
               draggable: false,
               selectable: false,
-              data: { label: '' },
-              style: {
-                width: 240, height: 2000,
-                background: `${a.color}08`, border: `2px dashed ${a.color}40`,
-                borderRadius: 8, zIndex: -1,
-              },
+              zIndex: -1,
+              data: { width: 240, height: 2000, bgColor: `${a.color}08`, borderColor: a.color },
             })),
             // 主体标签
             ...actors.map((a, i) => ({
