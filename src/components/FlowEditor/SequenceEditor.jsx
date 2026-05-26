@@ -55,6 +55,8 @@ export default function SequenceEditor() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(current.nodes || [])
   const [edges, setEdges, onEdgesChange] = useEdgesState(current.edges || [])
+  const [actors, setActors] = useState(current.actors || defaultActors)
+  const [swimlaneHeight, setSwimlaneHeight] = useState(current.swimlaneHeight || 1200)
 
   const viewportCenter = () => {
     const rf = rfRef.current
@@ -119,9 +121,6 @@ export default function SequenceEditor() {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [])
-
-  const [actors, setActors] = useState(current.actors || defaultActors)
-  const [swimlaneHeight, setSwimlaneHeight] = useState(current.swimlaneHeight || 1200)
 
   // 切换画布
   const doSwitch = (id) => {
