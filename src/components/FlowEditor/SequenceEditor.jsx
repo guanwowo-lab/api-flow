@@ -227,9 +227,9 @@ export default function SequenceEditor() {
         </div>
       )}
 
-      <div className="flex-1 flex">
+      <div className="flex-1 flex" style={{ minHeight: 0 }}>
         {sidebarOpen && (
-          <div className="w-48 bg-white border-r border-gray-200 p-3 overflow-y-auto overscroll-contain h-full">
+          <div className="w-48 bg-white border-r border-gray-200 p-3 overscroll-contain" style={{ overflowY: 'auto', height: '100%' }}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-gray-500">流程图列表</span>
               <button onClick={createDiagram} className="text-blue-600 hover:underline text-xs">+ 新建</button>
@@ -271,7 +271,7 @@ export default function SequenceEditor() {
         </div>
 
         {paletteOpen && (
-          <div className="w-44 bg-white border-l border-gray-200 p-2 overflow-y-auto text-xs overscroll-contain h-full">
+          <div className="w-44 bg-white border-l border-gray-200 p-2 text-xs overscroll-contain" style={{ overflowY: 'auto', height: '100%' }}>
             <div className="text-gray-400 font-medium mb-2 px-1">图形节点</div>
             <button onClick={() => addShapeNode('rect', '处理步骤')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📦 矩形框</button>
             <button onClick={() => addShapeNode('diamond', '判断条件')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">🔷 菱形</button>
