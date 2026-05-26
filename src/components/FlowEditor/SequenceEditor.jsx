@@ -34,7 +34,6 @@ export default function SequenceEditor() {
   })
   const [currentId, setCurrentId] = useState(diagrams[0]?.id || 'd1')
   const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
-  if (!current) return <div className="p-8 text-center text-gray-400">加载中...</div>
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
 
