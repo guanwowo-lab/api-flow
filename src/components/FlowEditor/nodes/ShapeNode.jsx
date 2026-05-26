@@ -30,7 +30,7 @@ export default function ShapeNode({ id, data, selected, width, height }) {
   const resizeRef = useRef({ dir: '', startX: 0, startY: 0, startW: 0, startH: 0 })
 
   const onResizeStart = useCallback((e, dir) => {
-    e.stopPropagation(); e.preventDefault()
+    e.stopPropagation(); e.preventDefault(); e.nativeEvent.stopImmediatePropagation()
     resizeRef.current = { dir, startX: e.clientX, startY: e.clientY, startW: dw, startH: dh }
     document.body.style.cursor = dir.includes('e') || dir.includes('w') ? 'ew-resize' : 'ns-resize'
   }, [dw, dh])
@@ -90,10 +90,10 @@ export default function ShapeNode({ id, data, selected, width, height }) {
 
       {selected && (
         <>
-          <div onMouseDown={(e) => onResizeStart(e, 'nw')} style={cornerStyle('nw')} />
-          <div onMouseDown={(e) => onResizeStart(e, 'ne')} style={cornerStyle('ne')} />
-          <div onMouseDown={(e) => onResizeStart(e, 'sw')} style={cornerStyle('sw')} />
-          <div onMouseDown={(e) => onResizeStart(e, 'se')} style={cornerStyle('se')} />
+          <div onPointerDown={(e) => onResizeStart(e, 'nw')} style={cornerStyle('nw')} />
+          <div onPointerDown={(e) => onResizeStart(e, 'ne')} style={cornerStyle('ne')} />
+          <div onPointerDown={(e) => onResizeStart(e, 'sw')} style={cornerStyle('sw')} />
+          <div onPointerDown={(e) => onResizeStart(e, 'se')} style={cornerStyle('se')} />
         </>
       )}
 
