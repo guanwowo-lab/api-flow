@@ -6,10 +6,35 @@ export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
 
   useEffect(() => { loadApiFolders() }, [])
+
+  // 迁移旧数据：为缺少 ourApiKey 的映射补充 key
+  useEffect(() => {
+    if (apisA.length === 0) return
+    let migrated = false
+    const newMappings = { ...mappings }
+    for (const key of Object.keys(newMappings)) {
+      const list = newMappings[key] || []
+      const updated = list.map((m) => {
+        if (!m.ourApiKey && m.ourApiIdx >= 0 && apisA[m.ourApiIdx]) {
+          migrated = true
+          return { ...m, ourApiKey: apiKey(apisA[m.ourApiIdx]) }
+        }
+        return m
+      })
+      if (migrated) newMappings[key] = updated
+    }
+    if (migrated) {
+      setMappings(newMappings)
+      saveMatches(state.project.id, state.folder?.id, { mappings: newMappings })
+    }
+  }, [apisA])
   const apisB = state.extractB?.apis || []
-  // 我方 API 直接从库中读取，保证参数是最新最全的
   const folders = state.apiFolders || []
   const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
+
+  // 用 name+url 做稳定标识，防止数组索引漂移
+  const apiKey = (api) => (api?.name || '') + '|||' + (api?.url || '')
+  const apiKeyMap = Object.fromEntries(apisA.map((a, i) => [apiKey(a), i]))
 
   // mappings: { [clientApiIdx]: [{ clientParam, ourApiIdx, ourParam, status }] }
   const [mappings, setMappings] = useState(() => {
@@ -28,8 +53,11 @@ export default function MatchPanel() {
   const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const existing = (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
     const list = (mappings[clientIdx] || []).filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
+    // 用 API key 代替数组索引存储，防止索引漂移
+    const ourApi = apisA[ourApiIdx]
+    const ourApiKey = ourApi ? apiKey(ourApi) : ''
     if (status !== 'unset') {
-      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourParam, status, remark: existing?.remark || '' })
+      list.push({ clientParam: paramKey, paramType, ourApiIdx, ourApiKey, ourParam, status, remark: existing?.remark || '' })
     }
     setMappings((prev) => ({ ...prev, [clientIdx]: list }))
     setDirtyClients((prev) => new Set(prev).add(clientIdx))
@@ -189,7 +217,8 @@ ${JSON.stringify(clientApis, null, 2)}
       } else {
         for (const p of allParams) {
           const m = list.find((x) => x.clientParam === p._key && x.paramType === p.paramType)
-          const ourApi = apisA[m?.ourApiIdx]
+          const idx = m?.ourApiKey && apiKeyMap[m.ourApiKey] !== undefined ? apiKeyMap[m.ourApiKey] : (m?.ourApiIdx ?? -1)
+          const ourApi = apisA[idx]
           let status = '未匹配'
           if (m?.status === 'matched' && m.ourParam === '__skip') status = '无需匹配'
           else if (m?.status === 'matched' && m.ourParam) status = '已匹配'
@@ -308,7 +337,7 @@ ${JSON.stringify(clientApis, null, 2)}
                           const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
                           const existing = mappings[i] || []
                           const other = existing.filter(m => !allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
-                          const added = allP.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourParam: '', status: 'matched' }))
+                          const added = allP.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]), ourParam: '', status: 'matched' }))
                           setMappings(prev => ({ ...prev, [i]: [...other, ...added] }))
                           setDirtyClients(prev => new Set(prev).add(i))
                         }}
@@ -434,7 +463,11 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, getMapping, setMappin
       <tbody>
         {params.map((pb, i) => {
           const m = getMapping(pb._key, paramType)
-          const selectedApiIdx = m?.ourApiIdx ?? -1
+          // 优先用 key 查找正确的 API，防止索引漂移
+          let selectedApiIdx = m?.ourApiIdx ?? -1
+          if (m?.ourApiKey && apiKeyMap[m.ourApiKey] !== undefined) {
+            selectedApiIdx = apiKeyMap[m.ourApiKey]
+          }
           const selectedApi = apisA[selectedApiIdx]
           const fields = fieldsFromApi(selectedApi)
           const indent = pb._depth || 0
