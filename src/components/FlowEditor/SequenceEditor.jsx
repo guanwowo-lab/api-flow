@@ -31,6 +31,24 @@ export default function SequenceEditor() {
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiGenError, setAiGenError] = useState('')
 
+  const [actors, setActors] = useState(() => savedData?.actors || [
+    { id: 'user', name: '用户', color: '#8b5cf6' },
+    { id: 'client', name: '客户系统', color: '#22c55e' },
+    { id: 'our', name: '我方系统', color: '#3b82f6' },
+  ])
+  const [actorEditOpen, setActorEditOpen] = useState(false)
+  const [newActorName, setNewActorName] = useState('')
+
+  const addActor = () => {
+    const name = newActorName.trim()
+    if (!name) return
+    const colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
+    setActors([...actors, { id: 'a' + Date.now(), name, color: colors[actors.length % colors.length] }])
+    setNewActorName('')
+  }
+
+  const actorX = (index) => 60 + index * 260
+
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge({
       ...params,
@@ -75,7 +93,7 @@ export default function SequenceEditor() {
   }
 
   const handleSave = async () => {
-    const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })) }
+    const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })), actors }
     await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
   }
 
@@ -174,6 +192,9 @@ ${pairDesc}
         <div className="flex-1" />
 
         <div className="flex gap-2">
+          <button onClick={() => setActorEditOpen(!actorEditOpen)} className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">
+            👥 流程主体 ({actors.length})
+          </button>
           <button onClick={() => setAiGenOpen(!aiGenOpen)} className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
             🤖 AI 生成
           </button>
@@ -217,6 +238,33 @@ ${pairDesc}
         </div>
       </div>
 
+      {actorEditOpen && (
+        <div className="mx-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-medium text-amber-700">👥 流程主体配置</span>
+            <button onClick={() => setActorEditOpen(false)} className="text-gray-400 hover:text-gray-600">关闭</button>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {actors.map((a) => (
+              <span key={a.id} className="px-2 py-1 rounded text-white text-xs" style={{ background: a.color }}>
+                {a.name}
+                {actors.length > 1 && (
+                  <button onClick={() => setActors(actors.filter((x) => x.id !== a.id))} className="ml-1 opacity-60 hover:opacity-100">&times;</button>
+                )}
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input value={newActorName} onChange={(e) => setNewActorName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addActor()}
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs outline-none"
+              placeholder="新主体名称" />
+            <button onClick={addActor} disabled={!newActorName.trim()}
+              className="px-3 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 disabled:opacity-50">添加</button>
+          </div>
+        </div>
+      )}
+
       {aiGenOpen && (
         <div className="mx-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs">
           <div className="flex items-center justify-between mb-2">
@@ -239,13 +287,25 @@ ${pairDesc}
 
       <div className="flex-1">
         <ReactFlow
-          nodes={nodes}
+          nodes={[
+            ...actors.map((a, i) => ({
+              id: `actor-${a.id}`,
+              type: 'default',
+              position: { x: actorX(i) - 20, y: 0 },
+              draggable: false,
+              selectable: false,
+              data: { label: a.name },
+              style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 },
+            })),
+            ...nodes,
+          ]}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={{ padding: 0.3 }}
         >
           <Controls />
           <Background />
