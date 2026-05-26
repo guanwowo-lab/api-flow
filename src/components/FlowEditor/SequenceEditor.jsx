@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import ReactFlow, {
   Controls, Background, MiniMap,
   addEdge, useNodesState, useEdgesState,
@@ -35,19 +35,6 @@ export default function SequenceEditor() {
   const [currentId, setCurrentId] = useState(diagrams[0]?.id || 'd1')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [paletteOpen, setPaletteOpen] = useState(true)
-  const leftRef = useRef(null)
-  const rightRef = useRef(null)
-
-  useEffect(() => {
-    const block = (e) => { e.stopPropagation() }
-    const left = leftRef.current; const right = rightRef.current
-    if (left) left.addEventListener('wheel', block, { passive: false })
-    if (right) right.addEventListener('wheel', block, { passive: false })
-    return () => {
-      if (left) left.removeEventListener('wheel', block)
-      if (right) right.removeEventListener('wheel', block)
-    }
-  }, [sidebarOpen, paletteOpen])
 
   const current = diagrams.find((d) => d.id === currentId) || diagrams[0]
 
@@ -212,7 +199,8 @@ export default function SequenceEditor() {
 
       <div className="flex-1 flex">
         {sidebarOpen && (
-          <div ref={leftRef} className="w-48 bg-white border-r border-gray-200 p-3 overflow-y-auto shrink-0 overscroll-contain">
+          <div className="w-48 bg-white border-r border-gray-200 p-3 overflow-y-auto shrink-0"
+            onWheel={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium text-gray-500">流程图列表</span>
               <button onClick={createDiagram} className="text-blue-600 hover:underline text-xs">+ 新建</button>
@@ -251,7 +239,8 @@ export default function SequenceEditor() {
         </div>
 
         {paletteOpen && (
-          <div ref={rightRef} className="w-44 bg-white border-l border-gray-200 p-2 overflow-y-auto shrink-0 text-xs overscroll-contain">
+          <div className="w-44 bg-white border-l border-gray-200 p-2 overflow-y-auto shrink-0 text-xs"
+            onWheel={(e) => e.stopPropagation()}>
             <div className="text-gray-400 font-medium mb-2 px-1">图形节点</div>
             <button onClick={() => addShapeNode('rect', '处理步骤')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">📦 矩形框</button>
             <button onClick={() => addShapeNode('diamond', '判断条件')} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">🔷 菱形</button>
