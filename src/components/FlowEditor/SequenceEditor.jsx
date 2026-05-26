@@ -43,18 +43,10 @@ export default function SequenceEditor() {
   const [actors, setActors] = useState(current.actors || defaultActors)
   const [swimlaneHeight, setSwimlaneHeight] = useState(current.swimlaneHeight || 1200)
 
-  // 同步当前画布数据到 diagrams
-  const syncCurrent = useCallback(() => {
-    setDiagrams((prev) => prev.map((d) =>
-      d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d
-    ))
-  }, [currentId, nodes, edges, actors, swimlaneHeight])
-
-  useEffect(() => { syncCurrent() }, [syncCurrent])
-
   // 切换画布
   const doSwitch = (id) => {
-    syncCurrent()
+    // 保存当前画布状态
+    setDiagrams((prev) => prev.map((d) => d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d))
     const d = diagrams.find((x) => x.id === id)
     if (d) {
       setCurrentId(id)
@@ -100,9 +92,12 @@ export default function SequenceEditor() {
   const justLoaded = useRef(true)
 
   const handleSave = async () => {
-    syncCurrent()
-    const data = { diagrams }
-    await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
+    // 直接用当前状态构建数据，不依赖异步的 syncCurrent
+    const updatedDiagrams = diagrams.map((d) =>
+      d.id === currentId ? { ...d, nodes, edges, actors, swimlaneHeight } : d
+    )
+    setDiagrams(updatedDiagrams)
+    await saveDiagram(state.project.id, state.folder?.id, 'sequence', { diagrams: updatedDiagrams })
     setSaved(true)
   }
 
