@@ -337,9 +337,14 @@ ${JSON.stringify(clientApis, null, 2)}
                           const flatOut = flattenParams(api.outputParams || [])
                           const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
                           const existing = mappings[i] || []
-                          const other = existing.filter(m => !allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
-                          const added = allP.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]), ourParam: '', status: 'matched' }))
-                          setMappings(prev => ({ ...prev, [i]: [...other, ...added] }))
+                          const updated = existing.map(m => {
+                            const match = allP.find(p => p._key === m.clientParam && p.paramType === m.paramType)
+                            if (match) return { ...m, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]) }
+                            return m
+                          })
+                          const missing = allP.filter(p => !existing.some(m => m.clientParam === p._key && m.paramType === p.paramType))
+                          const added = missing.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: apiKey(apisA[apiIdx]), ourParam: '', status: 'unset' }))
+                          setMappings(prev => ({ ...prev, [i]: [...updated, ...added] }))
                           setDirtyClients(prev => new Set(prev).add(i))
                         }}
                       />
