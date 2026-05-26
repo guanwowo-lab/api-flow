@@ -59,19 +59,15 @@ export default function SequenceEditor() {
     [setEdges]
   )
 
-  const addApiNode = (side, api, index) => {
+  const addApiNode = (side, api, index, actorId) => {
     const label = side === 'A' ? (api.name || `我方接口 ${index + 1}`) : (api.name || `客户接口 ${index + 1}`)
-    const x = side === 'A' ? 100 : 500
-    const y = 50 + index * 100
-    const id = `${side}-${index}-${Date.now()}`
+    const actorIdx = actors.findIndex((a) => a.id === actorId)
+    const x = actorIdx >= 0 ? actorX(actorIdx) + 40 : 300
+    const y = 80 + index * 110
+    const id = `api-${Date.now()}`
     setNodes((nds) => [
       ...nds,
-      {
-        id,
-        type: 'apiNode',
-        position: { x, y },
-        data: { label, side, method: api.method, url: api.url },
-      },
+      { id, type: 'apiNode', position: { x, y }, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '' } },
     ])
   }
 
@@ -202,23 +198,24 @@ ${pairDesc}
             <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
               + 添加节点
             </button>
-            <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg hidden group-hover:block z-10 min-w-[180px]">
-              <div className="px-3 py-2 text-xs text-gray-500 font-medium">我方接口</div>
+            <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg hidden group-hover:block z-10 min-w-[220px] max-h-[60vh] overflow-y-auto">
+              <div className="px-3 py-2 text-xs text-gray-500 font-medium">我方接口 → {actors.find(a => a.id === 'our')?.name || '我方系统'}</div>
               {apisA.map((api, i) => (
-                <button key={`a-${i}`} onClick={() => addApiNode('A', api, i)}
+                <button key={`a-${i}`} onClick={() => addApiNode('A', api, i, 'our')}
                   className="block w-full text-left px-3 py-1 text-sm hover:bg-blue-50">
                   {api.name || `接口 ${i + 1}`}
                 </button>
               ))}
               <div className="border-t" />
-              <div className="px-3 py-2 text-xs text-gray-500 font-medium">客户接口</div>
+              <div className="px-3 py-2 text-xs text-gray-500 font-medium">客户接口 → {actors.find(a => a.id === 'client')?.name || '客户系统'}</div>
               {apisB.map((api, i) => (
-                <button key={`b-${i}`} onClick={() => addApiNode('B', api, i)}
+                <button key={`b-${i}`} onClick={() => addApiNode('B', api, i, 'client')}
                   className="block w-full text-left px-3 py-1 text-sm hover:bg-green-50">
                   {api.name || `接口 ${i + 1}`}
                 </button>
               ))}
               <div className="border-t" />
+              <div className="px-3 py-2 text-xs text-gray-500 font-medium">其他节点</div>
               <button onClick={() => addStartEndNode('start')}
                 className="block w-full text-left px-3 py-1 text-sm hover:bg-gray-50">开始节点</button>
               <button onClick={() => addStartEndNode('end')}
@@ -288,10 +285,25 @@ ${pairDesc}
       <div className="flex-1">
         <ReactFlow
           nodes={[
+            // 泳道背景
+            ...actors.map((a, i) => ({
+              id: `swimlane-${a.id}`,
+              type: 'default',
+              position: { x: actorX(i), y: 50 },
+              draggable: false,
+              selectable: false,
+              data: { label: '' },
+              style: {
+                width: 240, height: 2000,
+                background: `${a.color}08`, border: `2px dashed ${a.color}40`,
+                borderRadius: 8, zIndex: -1,
+              },
+            })),
+            // 主体标签
             ...actors.map((a, i) => ({
               id: `actor-${a.id}`,
               type: 'default',
-              position: { x: actorX(i) - 20, y: 0 },
+              position: { x: actorX(i) + 60, y: 0 },
               draggable: false,
               selectable: false,
               data: { label: a.name },
