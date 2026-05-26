@@ -37,6 +37,7 @@ export default function SequenceEditor() {
     { id: 'client', name: '客户系统', color: '#22c55e' },
     { id: 'our', name: '我方系统', color: '#3b82f6' },
   ])
+  const [swimlaneHeight, setSwimlaneHeight] = useState(savedData?.swimlaneHeight || 1200)
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
 
@@ -90,7 +91,7 @@ export default function SequenceEditor() {
   }
 
   const handleSave = async () => {
-    const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })), actors }
+    const data = { nodes: nodes.map((n) => ({ ...n })), edges: edges.map((e) => ({ ...e })), actors, swimlaneHeight }
     await saveDiagram(state.project.id, state.folder?.id, 'sequence', data)
   }
 
@@ -252,6 +253,12 @@ ${pairDesc}
               </span>
             ))}
           </div>
+          <div className="flex gap-2 mb-3 items-center">
+            <span className="text-gray-500 text-xs">泳道高度:</span>
+            <input type="range" min={400} max={3000} step={100} value={swimlaneHeight}
+              onChange={(e) => setSwimlaneHeight(Number(e.target.value))} className="flex-1" />
+            <span className="text-gray-500 text-xs w-10">{swimlaneHeight}</span>
+          </div>
           <div className="flex gap-2">
             <input value={newActorName} onChange={(e) => setNewActorName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addActor()}
@@ -291,12 +298,12 @@ ${pairDesc}
               type: 'swimlane',
               position: { x: actorX(i), y: 50 },
               width: 240,
-              height: 2000,
+              height: swimlaneHeight,
               draggable: false,
               selectable: false,
               focusable: false,
               zIndex: -1,
-              data: { bgColor: `${a.color}15`, borderColor: a.color },
+              data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name },
             })),
             ...actors.map((a, i) => ({
               id: `actor-${a.id}`,
