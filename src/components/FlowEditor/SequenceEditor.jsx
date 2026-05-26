@@ -13,9 +13,9 @@ import ShapeNode from './nodes/ShapeNode'
 
 const nodeTypes = { apiNode: ApiNode, swimlane: SwimlaneNode, shapeNode: ShapeNode }
 const defaultActors = [
-  { id: 'user', name: '用户', color: '#8b5cf6' },
-  { id: 'client', name: '客户系统', color: '#22c55e' },
-  { id: 'our', name: '我方系统', color: '#3b82f6' },
+  { id: 'user', name: '用户', color: '#8b5cf6', width: 240 },
+  { id: 'client', name: '客户系统', color: '#22c55e', width: 240 },
+  { id: 'our', name: '我方系统', color: '#3b82f6', width: 240 },
 ]
 
 export default function SequenceEditor() {
@@ -148,7 +148,11 @@ export default function SequenceEditor() {
     setNewActorName('')
   }
 
-  const actorX = (index) => 60 + index * 260
+  const actorX = (index) => {
+    let x = 60
+    for (let j = 0; j < index; j++) x += (actors[j]?.width || 240) + 20
+    return x
+  }
 
   const onConnect = useCallback(
     (params) => setEdges((eds) => addEdge({ ...params, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#3b82f6', strokeWidth: 2 } }, eds)),
@@ -224,7 +228,7 @@ export default function SequenceEditor() {
       {actorEditOpen && (
         <div className="mx-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs">
           <div className="flex items-center justify-between mb-2"><span className="font-medium text-amber-700">👥 流程主体配置</span><button onClick={() => setActorEditOpen(false)} className="text-gray-400 hover:text-gray-600">关闭</button></div>
-          <div className="flex flex-wrap gap-2 mb-3">{actors.map((a) => (<span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 rounded text-white text-xs" style={{ background: a.color }}><input value={a.name} onChange={(e) => setActors(actors.map((x) => x.id === a.id ? { ...x, name: e.target.value } : x))} className="bg-transparent border-b border-white/30 outline-none w-20 text-white text-xs" /><ColorPicker color={a.color} onChange={(c) => setActors(actors.map((x) => x.id === a.id ? { ...x, color: c } : x))} /><button onClick={() => setActors(actors.filter((x) => x.id !== a.id))} className="opacity-60 hover:opacity-100">&times;</button></span>))}</div>
+          <div className="flex flex-wrap gap-2 mb-3">{actors.map((a) => (<span key={a.id} className="inline-flex items-center gap-1 px-2 py-1 rounded text-white text-xs" style={{ background: a.color }}><input value={a.name} onChange={(e) => setActors(actors.map((x) => x.id === a.id ? { ...x, name: e.target.value } : x))} className="bg-transparent border-b border-white/30 outline-none w-20 text-white text-xs" /><ColorPicker color={a.color} onChange={(c) => setActors(actors.map((x) => x.id === a.id ? { ...x, color: c } : x))} /><input type="number" value={a.width||240} onChange={(e) => setActors(actors.map((x) => x.id === a.id ? { ...x, width: Number(e.target.value)||240 } : x))} className="bg-white/20 rounded px-1 w-12 text-white text-xs outline-none" min={100} max={500} step={10} /><button onClick={() => setActors(actors.filter((x) => x.id !== a.id))} className="opacity-60 hover:opacity-100">&times;</button></span>))}</div>
           <div className="flex gap-2 mb-3 items-center"><span className="text-gray-500 text-xs">泳道高度:</span><input type="range" min={400} max={3000} step={100} value={swimlaneHeight} onChange={(e) => setSwimlaneHeight(Number(e.target.value))} className="flex-1" /><span className="text-gray-500 text-xs w-10">{swimlaneHeight}</span></div>
           <div className="flex gap-2"><input value={newActorName} onChange={(e) => setNewActorName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addActor()} className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs outline-none" placeholder="新主体名称" /><button onClick={addActor} disabled={!newActorName.trim()} className="px-3 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 disabled:opacity-50">添加</button></div>
         </div>
@@ -264,7 +268,7 @@ export default function SequenceEditor() {
         <div className="flex-1">
           <ReactFlow
             nodes={[
-              ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name, height: swimlaneHeight } })),
+              ...actors.map((a, i) => ({ id: `swimlane-${a.id}`, type: 'swimlane', position: { x: actorX(i), y: 50 }, width: a.width || 240, height: swimlaneHeight, draggable: false, selectable: false, focusable: false, zIndex: -1, data: { bgColor: `${a.color}15`, borderColor: a.color, label: a.name, height: swimlaneHeight } })),
               ...actors.map((a, i) => ({ id: `actor-${a.id}`, type: 'default', position: { x: actorX(i) + 60, y: 0 }, draggable: false, selectable: false, focusable: false, data: { label: a.name }, style: { background: a.color, color: '#fff', border: 'none', borderRadius: 4, padding: '6px 16px', fontWeight: 'bold', fontSize: 13, zIndex: 10 } })),
               ...nodes.map((n) => ({ ...n, data: { ...n.data, setNodes, connectMode } })),
             ]}
