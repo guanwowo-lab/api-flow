@@ -13,11 +13,11 @@ export default function ApiNode({ data }) {
       {/* 小圆点 */}
       <div onClick={(e) => { e.stopPropagation(); setShowPopup(!showPopup) }}
         style={{
-          width: 40, height: 40, borderRadius: '50%',
+          width: 30, height: 30, borderRadius: '50%',
           background: color, border: '2px solid #fff',
           boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, color: '#fff', fontWeight: 'bold',
+          fontSize: 12, color: '#fff', fontWeight: 'bold',
         }}
       >
         <Handle type="source" id="t" position={Position.Top} style={{ background: color, width: 6, height: 6 }} />
