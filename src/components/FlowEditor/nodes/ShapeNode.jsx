@@ -7,6 +7,7 @@ const defaults = {
   circle: { borderRadius: '50%', background: '#f8fafc', border: '2px solid #64748b' },
   ellipse: { borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e' },
   note: { borderRadius: '2px 2px 2px 16px', background: '#fef9c3', border: '1px solid #eab308' },
+  label: { borderRadius: 4, background: '#f1f5f9', border: 'none', fontSize: 11, color: '#475569' },
   end: { borderRadius: 20, background: '#fef2f2', border: '2px solid #ef4444' },
 }
 
