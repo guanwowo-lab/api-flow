@@ -233,75 +233,40 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
 只返回JSON，不要解释。`
   }
   const [connectMode, setConnectMode] = useState(false)
-  // 撤销历史：最多存50步
-  const historyRef = useRef([])
-  const historyIdxRef = useRef(-1)
-  const skipHistoryRef = useRef(false)
+  // 撤销历史：存为 state，最多50步
+  const [history, setHistory] = useState([])
+  const [historyIdx, setHistoryIdx] = useState(-1)
+  const applyingUndo = useRef(false)
 
-  const pushHistory = (nds, eds) => {
-    if (skipHistoryRef.current) return
-    const snapshot = { nodes: nds.map((n) => ({ ...n })), edges: eds.map((e) => ({ ...e })) }
-    const hist = historyRef.current
-    hist.splice(historyIdxRef.current + 1)
-    hist.push(snapshot)
-    if (hist.length > 50) hist.shift()
-    historyIdxRef.current = hist.length - 1
-  }
+  useEffect(() => {
+    if (applyingUndo.current) { applyingUndo.current = false; return }
+    const snap = { nodes: nodes.map((n) => ({ ...n, data: { ...n.data, setNodes: undefined } })), edges: edges.map((e) => ({ ...e })) }
+    setHistory((prev) => {
+      const h = prev.slice(0, historyIdx + 1)
+      h.push(snap)
+      if (h.length > 50) h.shift()
+      return h
+    })
+    setHistoryIdx((prev) => Math.min(prev + 1, 49))
+  }, [nodes, edges])
 
   const undo = () => {
-    if (historyRef.current.length === 0) return
-    if (historyIdxRef.current <= 0) {
-      // 回到最初状态
-      historyIdxRef.current = 0
-      const snap = historyRef.current[0]
-      if (snap) {
-        skipHistoryRef.current = true
-        setNodes(snap.nodes); setEdges(snap.edges)
-        setTimeout(() => { skipHistoryRef.current = false })
-      }
-      return
-    }
-    historyIdxRef.current--
-    const snap = historyRef.current[historyIdxRef.current]
-    if (snap) {
-      skipHistoryRef.current = true
-      setNodes(snap.nodes); setEdges(snap.edges)
-      setTimeout(() => { skipHistoryRef.current = false })
-    }
+    const newIdx = historyIdx - 1
+    if (newIdx < 0 || !history[newIdx]) return
+    setHistoryIdx(newIdx)
+    applyingUndo.current = true
+    setNodes(history[newIdx].nodes.map((n) => ({ ...n })))
+    setEdges(history[newIdx].edges.map((e) => ({ ...e })))
   }
 
   const redo = () => {
-    if (historyRef.current.length === 0 || historyIdxRef.current >= historyRef.current.length - 1) return
-    historyIdxRef.current++
-    const snap = historyRef.current[historyIdxRef.current]
-    if (snap) {
-      skipHistoryRef.current = true
-      setNodes(snap.nodes); setEdges(snap.edges)
-      setTimeout(() => { skipHistoryRef.current = false })
-    }
+    const newIdx = historyIdx + 1
+    if (newIdx >= history.length || !history[newIdx]) return
+    setHistoryIdx(newIdx)
+    applyingUndo.current = true
+    setNodes(history[newIdx].nodes.map((n) => ({ ...n })))
+    setEdges(history[newIdx].edges.map((e) => ({ ...e })))
   }
-
-  // 键盘快捷键（使用 ref 确保总是拿到最新函数）
-  const undoRef = useRef(undo); undoRef.current = undo
-  const redoRef = useRef(redo); redoRef.current = redo
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoRef.current() }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redoRef.current() }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redoRef.current() }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [])
-
-  // 每次 nodes/edges 变化时推入历史
-  const prevLenRef = useRef(0)
-  useEffect(() => {
-    if (!skipHistoryRef.current && (nodes.length > 0 || edges.length > 0 || prevLenRef.current > 0)) {
-      pushHistory(nodes, edges)
-      prevLenRef.current = nodes.length + edges.length
-    }
-  }, [nodes, edges])
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
 
