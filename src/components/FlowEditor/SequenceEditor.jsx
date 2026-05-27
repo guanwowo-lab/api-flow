@@ -233,6 +233,58 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
 只返回JSON，不要解释。`
   }
   const [connectMode, setConnectMode] = useState(false)
+  // 撤销历史：最多存50步
+  const historyRef = useRef([])
+  const historyIdxRef = useRef(-1)
+  const skipHistoryRef = useRef(false)
+
+  const pushHistory = (nds, eds) => {
+    if (skipHistoryRef.current) return
+    const snapshot = { nodes: nds.map((n) => ({ ...n })), edges: eds.map((e) => ({ ...e })) }
+    const hist = historyRef.current
+    hist.splice(historyIdxRef.current + 1)
+    hist.push(snapshot)
+    if (hist.length > 50) hist.shift()
+    historyIdxRef.current = hist.length - 1
+  }
+
+  const undo = () => {
+    if (historyIdxRef.current <= 0) return
+    historyIdxRef.current--
+    const snap = historyRef.current[historyIdxRef.current]
+    if (snap) {
+      skipHistoryRef.current = true
+      setNodes(snap.nodes); setEdges(snap.edges)
+      setTimeout(() => { skipHistoryRef.current = false })
+    }
+  }
+
+  const redo = () => {
+    if (historyIdxRef.current >= historyRef.current.length - 1) return
+    historyIdxRef.current++
+    const snap = historyRef.current[historyIdxRef.current]
+    if (snap) {
+      skipHistoryRef.current = true
+      setNodes(snap.nodes); setEdges(snap.edges)
+      setTimeout(() => { skipHistoryRef.current = false })
+    }
+  }
+
+  // 键盘快捷键
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo() }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  })
+
+  // 每次 nodes/edges 变化时推入历史
+  useEffect(() => {
+    if (!skipHistoryRef.current) pushHistory(nodes, edges)
+  }, [nodes, edges])
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
 
