@@ -249,7 +249,18 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
   }
 
   const undo = () => {
-    if (historyIdxRef.current <= 0) return
+    if (historyRef.current.length === 0) return
+    if (historyIdxRef.current <= 0) {
+      // 回到最初状态
+      historyIdxRef.current = 0
+      const snap = historyRef.current[0]
+      if (snap) {
+        skipHistoryRef.current = true
+        setNodes(snap.nodes); setEdges(snap.edges)
+        setTimeout(() => { skipHistoryRef.current = false })
+      }
+      return
+    }
     historyIdxRef.current--
     const snap = historyRef.current[historyIdxRef.current]
     if (snap) {
@@ -260,7 +271,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
   }
 
   const redo = () => {
-    if (historyIdxRef.current >= historyRef.current.length - 1) return
+    if (historyRef.current.length === 0 || historyIdxRef.current >= historyRef.current.length - 1) return
     historyIdxRef.current++
     const snap = historyRef.current[historyIdxRef.current]
     if (snap) {
