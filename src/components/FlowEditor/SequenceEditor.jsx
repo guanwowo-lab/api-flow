@@ -303,8 +303,28 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
       const data = await resp.json(); const reply = data?.choices?.[0]?.message?.content || ''
       let jsonStr = reply; const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/); if (codeBlock) jsonStr = codeBlock[1]
       const parsed = JSON.parse(jsonStr)
-      if (parsed.nodes) setNodes(parsed.nodes)
-      if (parsed.edges) setEdges(parsed.edges)
+      if (parsed.nodes) {
+        // 根据 x 坐标自动分配主体：x<200→客户, x>400→我方, 否则→用户
+        const withActors = parsed.nodes.map((n) => {
+          const x = n.position?.x || 0
+          const label = n.data?.label || ''
+          if (label === '开始' || label === '结束') return { ...n, data: { ...n.data, actorId: 'user' } }
+          if (x < 250) return { ...n, data: { ...n.data, actorId: 'client' } }
+          if (x > 350) return { ...n, data: { ...n.data, actorId: 'our' } }
+          return { ...n, data: { ...n.data, actorId: 'user' } }
+        })
+        setNodes(withActors)
+      }
+      if (parsed.edges) {
+        // 强制折线样式
+        const stepped = parsed.edges.map((e) => ({
+          ...e, type: 'smoothstep',
+          animated: true,
+          markerEnd: e.markerEnd || { type: 'arrowclosed' },
+          style: { stroke: '#3b82f6', strokeWidth: 2, ...(e.style || {}) },
+        }))
+        setEdges(stepped)
+      }
       setAiGenOpen(false)
     } catch (e) { setAiGenError(e.message) } finally { setAiGenLoading(false) }
   }
