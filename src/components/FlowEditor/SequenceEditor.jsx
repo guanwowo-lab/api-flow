@@ -233,6 +233,36 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
 只返回JSON，不要解释。`
   }
   const [connectMode, setConnectMode] = useState(false)
+  const clipboardRef = useRef([])
+
+  // Ctrl+C/V 复制粘贴
+  useEffect(() => {
+    const handler = (e) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        const selected = nodes.filter((n) => n.selected && !n.id.startsWith('swimlane-') && !n.id.startsWith('actor-'))
+        if (selected.length > 0) {
+          clipboardRef.current = selected.map((n) => ({ ...n, data: { ...n.data } }))
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        const copies = clipboardRef.current
+        if (copies.length > 0) {
+          const offset = 40
+          const newNodes = copies.map((n, i) => ({
+            ...n,
+            id: `${n.type || 'node'}-${Date.now()}-${i}`,
+            position: { x: n.position.x + offset, y: n.position.y + offset },
+            selected: false,
+            data: { ...n.data, setNodes, connectMode: false },
+          }))
+          setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes))
+        }
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [nodes, setNodes])
   // 撤销历史：存为 state，最多50步
   const [history, setHistory] = useState([])
   const [historyIdx, setHistoryIdx] = useState(-1)
