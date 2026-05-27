@@ -304,22 +304,39 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
       let jsonStr = reply; const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/); if (codeBlock) jsonStr = codeBlock[1]
       const parsed = JSON.parse(jsonStr)
       if (parsed.nodes) {
-        // 根据 x 坐标自动分配主体：x<200→客户, x>400→我方, 否则→用户
-        const withActors = parsed.nodes.map((n) => {
-          const x = n.position?.x || 0
+        const sizes = { rect: { w: 140, h: 50 }, diamond: { w: 120, h: 80 }, circle: { w: 90, h: 90 }, note: { w: 140, h: 70 }, end: { w: 140, h: 50 }, ellipse: { w: 140, h: 60 } }
+        const converted = parsed.nodes.map((n) => {
+          const x = n.position?.x || 350
           const label = n.data?.label || ''
-          if (label === '开始' || label === '结束') return { ...n, data: { ...n.data, actorId: 'user' } }
-          if (x < 250) return { ...n, data: { ...n.data, actorId: 'client' } }
-          if (x > 350) return { ...n, data: { ...n.data, actorId: 'our' } }
-          return { ...n, data: { ...n.data, actorId: 'user' } }
+          const np = { position: n.position || { x: 350, y: 100 }, data: { label, setNodes, connectMode: false } }
+
+          // 判断节点类型并设置对应的 shape 和尺寸
+          if (label === '开始') {
+            return { ...np, id: n.id, type: 'shapeNode', width: sizes.ellipse.w, height: sizes.ellipse.h, data: { ...np.data, shape: 'ellipse', actorId: 'user' } }
+          }
+          if (label === '结束') {
+            return { ...np, id: n.id, type: 'shapeNode', width: sizes.end.w, height: sizes.end.h, data: { ...np.data, shape: 'end', actorId: 'user' } }
+          }
+          // API 节点（带 method 和 url）
+          if (n.data?.method && n.data?.url) {
+            const side = x < 250 ? 'B' : 'A'
+            return { ...np, id: n.id, type: 'apiNode', width: 30, height: 30, data: { ...np.data, label, side, method: n.data.method, url: n.data.url, collapsed: true, actorId: side === 'A' ? 'our' : 'client' } }
+          }
+          // 根据标签关键词推断形状
+          const isDiamond = /判断|条件|是否|验证|校验|检查|确认/.test(label)
+          const shape = isDiamond ? 'diamond' : 'rect'
+          const s = sizes[shape] || sizes.rect
+          // 分配主体
+          let actorId = 'user'
+          if (x < 250) actorId = 'client'
+          else if (x > 350) actorId = 'our'
+          return { ...np, id: n.id, type: 'shapeNode', width: s.w, height: s.h, data: { ...np.data, shape, actorId } }
         })
-        setNodes(withActors)
+        setNodes(converted)
       }
       if (parsed.edges) {
-        // 强制折线样式
         const stepped = parsed.edges.map((e) => ({
-          ...e, type: 'smoothstep',
-          animated: true,
+          ...e, type: 'smoothstep', animated: true,
           markerEnd: e.markerEnd || { type: 'arrowclosed' },
           style: { stroke: '#3b82f6', strokeWidth: 2, ...(e.style || {}) },
         }))
