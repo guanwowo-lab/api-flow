@@ -499,7 +499,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
         {paletteOpen && (
           <div className="w-44 bg-white border-l border-gray-200 p-2 text-xs overscroll-contain" style={{ overflowY: 'auto', height: '100%' }}>
             <div className="text-gray-400 font-medium mb-2 px-1">图形节点（可拖放）</div>
-            {[{shape:'rect',label:'处理步骤',icon:'📦'},{shape:'diamond',label:'判断条件',icon:'🔷'},{shape:'circle',label:'标记',icon:'⭕'},{shape:'note',label:'备注',icon:'📝'}].map(({shape,label,icon}) => (
+            {[{shape:'rect',label:'处理步骤',icon:'📦'},{shape:'diamond',label:'判断条件',icon:'🔷'},{shape:'circle',label:'标记',icon:'⭕'},{shape:'note',label:'备注',icon:'📝'},{shape:'note',label:'标注说明',icon:'💬'}].map(({shape,label,icon}) => (
               <button key={shape} draggable onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type','shape'); e.dataTransfer.setData('application/reactflow-shape',shape); e.dataTransfer.setData('application/reactflow-label',label); e.dataTransfer.effectAllowed='move' }} onClick={() => addShapeNode(shape, label)} className="block w-full text-left px-2 py-1 rounded hover:bg-gray-100 mb-0.5">{icon} {label}</button>
             ))}
             {[{type:'start',label:'开始',icon:'▶'},{type:'end',label:'结束',icon:'⏹'}].map(({type,label,icon}) => (
