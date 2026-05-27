@@ -270,20 +270,26 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     }
   }
 
-  // 键盘快捷键
+  // 键盘快捷键（使用 ref 确保总是拿到最新函数）
+  const undoRef = useRef(undo); undoRef.current = undo
+  const redoRef = useRef(redo); redoRef.current = redo
   useEffect(() => {
     const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redo() }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undoRef.current() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) { e.preventDefault(); redoRef.current() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redoRef.current() }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  })
+  }, [])
 
   // 每次 nodes/edges 变化时推入历史
+  const prevLenRef = useRef(0)
   useEffect(() => {
-    if (!skipHistoryRef.current) pushHistory(nodes, edges)
+    if (!skipHistoryRef.current && (nodes.length > 0 || edges.length > 0 || prevLenRef.current > 0)) {
+      pushHistory(nodes, edges)
+      prevLenRef.current = nodes.length + edges.length
+    }
   }, [nodes, edges])
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
