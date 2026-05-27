@@ -391,8 +391,6 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
         <div className="flex-1" />
         <button onClick={() => setActorEditOpen(!actorEditOpen)} className="px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700">👥 主体 ({actors.length})</button>
         <button onClick={() => setAiGenOpen(!aiGenOpen)} className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">🤖 AI 生成</button>
-        <button onClick={undo} className="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-gray-200" title="Ctrl+Z">↩</button>
-        <button onClick={redo} className="px-2 py-1 rounded text-sm bg-gray-100 hover:bg-gray-200" title="Ctrl+Y">↪</button>
         <button onClick={() => setConnectMode(!connectMode)} className={`px-2 py-1 rounded text-sm ${connectMode ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>🔗 连线</button>
         <button onClick={() => setPaletteOpen(!paletteOpen)} className={`px-2 py-1 rounded text-sm ${paletteOpen ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>☰ 节点库</button>
         <button onClick={handleSave} className={`px-3 py-1 rounded text-sm text-white ${saved ? 'bg-green-600' : 'bg-orange-500 hover:bg-orange-600 animate-pulse'}`}>{saved ? '已保存 ✓' : '● 点击保存'}</button>
