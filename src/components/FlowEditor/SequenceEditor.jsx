@@ -200,6 +200,38 @@ export default function SequenceEditor() {
   const [aiGenOpen, setAiGenOpen] = useState(false)
   const [aiGenLoading, setAiGenLoading] = useState(false)
   const [aiGenError, setAiGenError] = useState('')
+  const [aiFlowDesc, setAiFlowDesc] = useState('')
+  const [aiOutputFormat, setAiOutputFormat] = useState('')
+
+  const buildAiPrompt = () => {
+    const actorDesc = actors.map((a) => a.name).join('、')
+    return `你是一个API时序流程图生成器。请根据以下信息生成对接流程图。
+
+**参与主体：**
+${actorDesc}
+
+**流程说明：**
+${aiFlowDesc || '根据匹配的接口对自动推断流程'}
+
+**输出格式要求：**
+${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节点放右边（x=500，蓝色背景），y坐标间隔120px，添加开始和结束节点'}
+
+**已匹配的接口对：**
+{pairs_placeholder}
+
+请返回 React Flow 格式的 JSON（只返回JSON）：
+{
+  "nodes": [
+    { "id": "start", "type": "default", "position": {"x": 400, "y": 0}, "data": {"label": "开始"}, "style": {"background": "#f1f5f9", "border": "2px solid #64748b", "borderRadius": "50%", "padding": "10px 20px", "fontWeight": "bold"} },
+    { "id": "c1", "position": {"x": 100, "y": 80}, "data": {"label": "客户\\\\n接口名", "method": "POST", "url": "/api/xxx"}, "style": {"background": "#f0fdf4", "border": "1px solid #22c55e", "borderRadius": 8, "padding": 12, "width": 180} },
+    { "id": "end", "type": "default", "position": {"x": 400, "y": 500}, "data": {"label": "结束"}, "style": {"background": "#f1f5f9", "border": "2px solid #64748b", "borderRadius": 8, "padding": "10px 20px", "fontWeight": "bold"} }
+  ],
+  "edges": [
+    { "id": "e1", "source": "c1", "target": "o1", "animated": true, "markerEnd": {"type": "arrowclosed"}, "style": {"stroke": "#3b82f6", "strokeWidth": 2}, "label": "1. 请求"}
+  ]
+}
+只返回JSON，不要解释。`
+  }
   const [connectMode, setConnectMode] = useState(false)
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
@@ -264,7 +296,7 @@ export default function SequenceEditor() {
 
       const config = getAiConfig()
       const pairDesc = pairs.map((p, i) => `${i + 1}. 客户: ${p.client.method} ${p.client.name} (${p.client.url})\n   我方: ${p.our.method} ${p.our.name} (${p.our.url})`).join('\n')
-      const prompt = `你是一个API时序流程图生成器。根据以下匹配的接口对，生成一个对接流程图。\n\n接口对：\n${pairDesc}\n\n请返回 React Flow 格式的 JSON（只返回JSON）：\n{\n  "nodes": [\n    { "id": "start", "type": "default", "position": {"x": 400, "y": 0}, "data": {"label": "开始"}, "style": {"background": "#f1f5f9", "border": "2px solid #64748b", "borderRadius": "50%", "padding": "10px 20px", "fontWeight": "bold"} },\n    { "id": "c1", "position": {"x": 100, "y": 80}, "data": {"label": "客户\\\\n接口名", "method": "POST", "url": "/api/xxx"}, "style": {"background": "#f0fdf4", "border": "1px solid #22c55e", "borderRadius": 8, "padding": 12, "width": 180} },\n    { "id": "end", "type": "default", "position": {"x": 400, "y": 500}, "data": {"label": "结束"}, "style": {"background": "#f1f5f9", "border": "2px solid #64748b", "borderRadius": 8, "padding": "10px 20px", "fontWeight": "bold"} }\n  ],\n  "edges": [\n    { "id": "e1", "source": "c1", "target": "o1", "animated": true, "markerEnd": {"type": "arrowclosed"}, "style": {"stroke": "#3b82f6", "strokeWidth": 2}, "label": "1. 请求"}\n  ]\n}\n规则：客户节点x=100（绿色背景#f0fdf4），我方节点x=500（蓝色背景#eff6ff），y间隔120px，添加开始结束节点`
+      const prompt = buildAiPrompt().replace('{pairs_placeholder}', pairDesc)
 
       const resp = await fetch(`${config.baseUrl}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` }, body: JSON.stringify({ model: config.model, max_tokens: 16384, temperature: 0.1, messages: [{ role: 'user', content: prompt }] }) })
       if (!resp.ok) throw new Error(`AI请求失败 (${resp.status})`)
@@ -303,11 +335,31 @@ export default function SequenceEditor() {
       )}
 
       {aiGenOpen && (
-        <div className="mx-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs">
-          <div className="flex items-center justify-between mb-2"><span className="font-medium text-purple-700">🤖 AI 自动生成时序流程图</span><button onClick={() => { setAiGenOpen(false); setAiGenError('') }} className="text-gray-400 hover:text-gray-600">关闭</button></div>
-          <p className="text-gray-500 mb-2">基于匹配页面已确认的接口对，AI 自动生成时序流程图。</p>
+        <div className="mx-4 p-4 bg-purple-50 border border-purple-200 rounded-lg text-xs">
+          <div className="flex items-center justify-between mb-3"><span className="font-medium text-purple-700">🤖 AI 生成流程图</span><button onClick={() => { setAiGenOpen(false); setAiGenError('') }} className="text-gray-400 hover:text-gray-600">关闭</button></div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <label className="flex flex-col gap-1">
+              <span className="text-purple-700 font-medium">参与主体</span>
+              <span className="text-gray-400 text-[10px]">当前画布主体：{actors.map(a=>a.name).join('、')}</span>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-purple-700 font-medium">输出方式</span>
+              <input value={aiOutputFormat} onChange={(e) => setAiOutputFormat(e.target.value)}
+                className="px-2 py-1 border border-purple-200 rounded outline-none text-xs"
+                placeholder="如：客户左我方右，竖向排列，标注序号" />
+            </label>
+          </div>
+          <label className="flex flex-col gap-1 mb-3">
+            <span className="text-purple-700 font-medium">流程说明</span>
+            <textarea value={aiFlowDesc} onChange={(e) => setAiFlowDesc(e.target.value)}
+              className="w-full h-20 px-3 py-2 border border-purple-200 rounded outline-none resize-none text-xs"
+              placeholder="描述业务流程，AI 据此推断节点和顺序。例如：用户发起下单请求→我方验证库存→调用第三方支付→返回结果" />
+          </label>
           {aiGenError && <p className="text-red-500 mb-2">{aiGenError}</p>}
-          <button onClick={handleAiGenerate} disabled={aiGenLoading} className="px-4 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50">{aiGenLoading ? 'AI 生成中...' : '开始生成'}</button>
+          <button onClick={handleAiGenerate} disabled={aiGenLoading}
+            className="px-4 py-1.5 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:opacity-50 w-full">
+            {aiGenLoading ? 'AI 生成中...' : `开始生成（${apisB.length} 个客户接口已匹配）`}
+          </button>
         </div>
       )}
 
