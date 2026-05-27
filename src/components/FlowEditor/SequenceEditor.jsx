@@ -202,6 +202,7 @@ export default function SequenceEditor() {
   const [aiGenError, setAiGenError] = useState('')
   const [aiFlowDesc, setAiFlowDesc] = useState('')
   const [aiOutputFormat, setAiOutputFormat] = useState('')
+  const [aiIncludeCurrent, setAiIncludeCurrent] = useState(false)
 
   const buildAiPrompt = () => {
     const actorDesc = actors.map((a) => a.name).join('、')
@@ -360,7 +361,18 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
 
       const config = getAiConfig()
       const pairDesc = pairs.map((p, i) => `${i + 1}. 客户: ${p.client.method} ${p.client.name} (${p.client.url})\n   我方: ${p.our.method} ${p.our.name} (${p.our.url})`).join('\n')
-      const prompt = buildAiPrompt().replace('{pairs_placeholder}', pairDesc)
+      let prompt = buildAiPrompt().replace('{pairs_placeholder}', pairDesc)
+
+      // 包含当前画布作为参考
+      if (aiIncludeCurrent && (nodes.length > 0 || edges.length > 0)) {
+        const nodeDesc = nodes.filter((n) => !n.id.startsWith('swimlane-') && !n.id.startsWith('actor-')).map((n) =>
+          `- [${n.type || 'default'}] "${n.data?.label || ''}" at (${Math.round(n.position.x)}, ${Math.round(n.position.y)})` + (n.data?.shape ? ` shape:${n.data.shape}` : '') + (n.data?.method ? ` ${n.data.method} ${n.data.url}` : '')
+        ).join('\n')
+        const edgeDesc = edges.map((e) =>
+          `- ${e.source} -> ${e.target}` + (e.label ? ` (${e.label})` : '')
+        ).join('\n')
+        prompt += `\n\n**当前画布参考（请以此为基础生成新图）：**\n现有节点：\n${nodeDesc || '(空)'}\n现有连线：\n${edgeDesc || '(空)'}\n请在上述节点基础上补充、调整或重新生成，保持一致的布局风格。`
+      }
 
       const resp = await fetch(`${config.baseUrl}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` }, body: JSON.stringify({ model: config.model, max_tokens: 16384, temperature: 0.1, messages: [{ role: 'user', content: prompt }] }) })
       if (!resp.ok) throw new Error(`AI请求失败 (${resp.status})`)
@@ -450,6 +462,10 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
                 placeholder="如：客户左我方右，竖向排列，标注序号" />
             </label>
           </div>
+          <label className="flex items-center gap-2 mb-3 text-xs cursor-pointer">
+            <input type="checkbox" checked={aiIncludeCurrent} onChange={(e) => setAiIncludeCurrent(e.target.checked)} />
+            <span className="text-purple-700">包含当前画布作为参考（AI 基于现有节点生成新图）</span>
+          </label>
           <label className="flex flex-col gap-1 mb-3">
             <span className="text-purple-700 font-medium">流程说明</span>
             <textarea value={aiFlowDesc} onChange={(e) => setAiFlowDesc(e.target.value)}
