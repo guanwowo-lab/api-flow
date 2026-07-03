@@ -1,0 +1,7 @@
+{
+  "modules": [
+    { "key": "auth", "label": "认证服务", "file": "auth.json" },
+    { "key": "product", "label": "商品服务", "file": "product.json" },
+    { "key": "order", "label": "订单服务", "file": "order.json" }
+  ]
+}

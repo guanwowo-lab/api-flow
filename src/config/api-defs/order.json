@@ -1,0 +1,108 @@
+[
+  {
+    "id": "submitOrder",
+    "name": "提交订单",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/submitOrder",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "submitState", "label": "提交状态", "required": true, "type": "enum", "options": ["1001", "1002"], "optionLabels": ["1001-预占库存(草稿)", "1002-直接生成正式订单"], "default": "1001" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" },
+      { "name": "skuCode", "label": "SKU编码", "required": true, "type": "string" },
+      { "name": "quantity", "label": "数量", "required": true, "type": "number", "default": 1 },
+      { "name": "receiverName", "label": "收货人姓名", "required": true, "type": "string" },
+      { "name": "receiverMobile", "label": "收货人手机号", "required": true, "type": "string" },
+      { "name": "receiverAddress", "label": "收货详细地址", "required": true, "type": "string" },
+      { "name": "provinceCode", "label": "省编码", "required": true, "type": "string" },
+      { "name": "cityCode", "label": "市编码", "required": true, "type": "string" },
+      { "name": "areaCode", "label": "区编码", "required": true, "type": "string" },
+      { "name": "streetCode", "label": "街道编码", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "confirmOrder",
+    "name": "预占确认订单",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/confirmOrder",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "cancelOrder",
+    "name": "取消订单",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/cancelOrder",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" },
+      { "name": "cancelReason", "label": "取消原因", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOrderList",
+    "name": "获取订单列表",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/queryOrderList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
+      { "name": "orderStatus", "label": "订单状态", "required": false, "type": "string" },
+      { "name": "startTime", "label": "开始时间", "required": false, "type": "string" },
+      { "name": "endTime", "label": "结束时间", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOrderDetail",
+    "name": "获取订单详情",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/queryOrderDetail",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOrderLogistics",
+    "name": "获取订单物流",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/queryOrderLogistics",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOrderInvoice",
+    "name": "获取订单发票",
+    "category": "订单服务",
+    "method": "POST",
+    "path": "/open/api/order/queryOrderInvoice",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  }
+]

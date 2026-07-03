@@ -1,0 +1,118 @@
+[
+  {
+    "id": "queryGoodsList",
+    "name": "获取商品信息列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
+      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string" },
+      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string" },
+      { "name": "goodsName", "label": "商品名称", "required": false, "type": "string" },
+      { "name": "stockStatus", "label": "库存状态", "required": false, "type": "enum", "options": ["", "1001", "1002"], "optionLabels": ["全部", "有库存", "无库存"] },
+      { "name": "addressCode", "label": "可销售区域编码", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "searchGoodsList",
+    "name": "检索商品信息列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/searchGoodsList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
+      { "name": "keyword", "label": "搜索关键词", "required": false, "type": "string" },
+      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string" },
+      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsDetail",
+    "name": "获取商品详情信息",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsDetail",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "skuCode", "label": "SKU编码", "required": true, "type": "string" },
+      { "name": "goodsCode", "label": "商品编码", "required": false, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsImages",
+    "name": "获取商品图片列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsImages",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "skuCode", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsPriceList",
+    "name": "获取商品价格列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsPriceList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsStockList",
+    "name": "获取商品库存列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsStockList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsOnOffSale",
+    "name": "获取商品上下架列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsOnOffSaleList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsSaleAreas",
+    "name": "获取商品销售区域列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsSaleAreas",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  }
+]
