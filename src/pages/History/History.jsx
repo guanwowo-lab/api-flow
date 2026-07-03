@@ -13,7 +13,7 @@ export default function History({ apis }) {
       const params = new URLSearchParams()
       if (filters.apiId) params.set('apiId', filters.apiId)
       if (filters.pass) params.set('pass', filters.pass)
-      const res = await fetch(`http://localhost:3001/api/history?${params}`)
+      const res = await fetch(`/api/history?${params}`)
       const data = await res.json()
       setRecords(data)
     } catch { setRecords([]) }
@@ -23,7 +23,7 @@ export default function History({ apis }) {
   useEffect(() => { loadHistory() }, [loadHistory])
 
   const handleDelete = async (id) => {
-    await fetch(`http://localhost:3001/api/history/${id}`, { method: 'DELETE' })
+    await fetch(`/api/history/${id}`, { method: 'DELETE' })
     loadHistory()
   }
 

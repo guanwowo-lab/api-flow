@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import ResponseViewer from '../../components/ResponseViewer/ResponseViewer'
 
-const LOCAL_PROXY = 'http://localhost:3001/api/proxy'
+const LOCAL_PROXY = '/api/proxy'
 
 const PRESET_SCENARIOS = [
   {
@@ -81,7 +81,7 @@ export default function BatchTest({ apis, credentials, env, onTokenUpdate }) {
         }
 
         // Save to history
-        fetch('http://localhost:3001/api/history', {
+        fetch('/api/history', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

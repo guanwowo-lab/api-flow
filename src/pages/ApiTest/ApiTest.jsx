@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import ParamForm from '../../components/ParamForm/ParamForm'
 import ResponseViewer from '../../components/ResponseViewer/ResponseViewer'
 
-const LOCAL_PROXY = 'http://localhost:3001/api/proxy'
+const LOCAL_PROXY = '/api/proxy'
 
 export default function ApiTest({ api, credentials, env, onTokenUpdate }) {
   const [values, setValues] = useState({})
@@ -51,7 +51,7 @@ export default function ApiTest({ api, credentials, env, onTokenUpdate }) {
       setResponse(result)
 
       // Auto-save to history
-      fetch('http://localhost:3001/api/history', {
+      fetch('/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
