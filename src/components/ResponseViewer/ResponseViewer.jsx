@@ -38,13 +38,13 @@ export default function ResponseViewer({ response }) {
           <span className="text-gray-500 text-xs">{data.desc}</span>
         )}
 
-        <span className="ml-auto text-xs text-gray-400">{duration}ms</span>
+        <span className="ml-auto text-xs text-gray-400">{duration != null ? `${duration}ms` : ''}</span>
       </div>
 
       {/* Error display */}
-      {!isSuccess && data?.desc && (
+      {!isSuccess && (data?.desc || response.desc) && (
         <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-          {data.desc}
+          {data?.desc || response.desc}
         </div>
       )}
 

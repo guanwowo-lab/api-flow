@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 export default function History({ apis }) {
   const [records, setRecords] = useState([])
@@ -40,12 +40,13 @@ export default function History({ apis }) {
   }
 
   const handleReplay = (record) => {
-    // Store replay data in sessionStorage for the test page to pick up
     sessionStorage.setItem('apitester_replay', JSON.stringify({
       apiId: record.apiId,
       params: record.requestParams,
     }))
-    window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'apiTest' } }))
+    if (window.handleNav) {
+      window.handleNav('apiTest', record.apiId)
+    }
   }
 
   const toggleSelect = (id) => {
@@ -112,8 +113,8 @@ export default function History({ apis }) {
             </thead>
             <tbody>
               {records.map(r => (
-                <>
-                  <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
+                <React.Fragment key={r.id}>
+                  <tr className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="p-2">
                       <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} />
                     </td>
@@ -151,7 +152,7 @@ export default function History({ apis }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>

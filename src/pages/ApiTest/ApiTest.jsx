@@ -15,6 +15,21 @@ export default function ApiTest({ api, credentials, env, onTokenUpdate }) {
     setResponse(null)
   }, [api?.id])
 
+  // Restore replay params from sessionStorage
+  useEffect(() => {
+    if (!api) return
+    try {
+      const replayStr = sessionStorage.getItem('apitester_replay')
+      if (replayStr) {
+        const replay = JSON.parse(replayStr)
+        if (replay.apiId === api.id) {
+          setValues(replay.params || {})
+          sessionStorage.removeItem('apitester_replay')
+        }
+      }
+    } catch {}
+  }, [api])
+
   const handleParamChange = useCallback((name, value) => {
     setValues(prev => ({ ...prev, [name]: value }))
   }, [])

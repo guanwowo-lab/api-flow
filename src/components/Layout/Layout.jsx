@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import CredentialBar from '../CredentialBar/CredentialBar'
 import InterfaceTree from '../InterfaceTree/InterfaceTree'
 import ApiTest from '../../pages/ApiTest/ApiTest'
@@ -29,17 +29,14 @@ export default function Layout() {
     [selectedApiId]
   )
 
-  // Listen for navigation events from History replay
-  function handleNavChange(view, apiId) {
-    setActiveView(view)
-    if (apiId) setSelectedApiId(apiId)
-  }
-
-  // Expose navigation handler globally for replay
-  window.handleNav = (view, apiId) => {
-    setActiveView(view)
-    if (apiId) setSelectedApiId(apiId)
-  }
+  // Expose navigation handler globally for History replay
+  useEffect(() => {
+    window.handleNav = (view, apiId) => {
+      setActiveView(view)
+      if (apiId) setSelectedApiId(apiId)
+    }
+    return () => { delete window.handleNav }
+  }, [])
 
   return (
     <div className="h-screen flex flex-col">
