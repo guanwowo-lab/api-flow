@@ -57,7 +57,7 @@ export default function History({ apis }) {
 
   const formatTime = (ts) => {
     const d = new Date(ts)
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
+    return `${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`
   }
 
   return (
@@ -66,7 +66,7 @@ export default function History({ apis }) {
         <select
           value={filters.apiId}
           onChange={e => setFilters(f => ({ ...f, apiId: e.target.value }))}
-          className="px-2 py-1 text-sm border border-gray-300 rounded"
+          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
         >
           <option value="">全部接口</option>
           {apis.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -75,14 +75,14 @@ export default function History({ apis }) {
         <select
           value={filters.pass}
           onChange={e => setFilters(f => ({ ...f, pass: e.target.value }))}
-          className="px-2 py-1 text-sm border border-gray-300 rounded"
+          className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 bg-white"
         >
           <option value="">全部结果</option>
           <option value="true">通过</option>
           <option value="false">失败</option>
         </select>
 
-        <button onClick={loadHistory} className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">刷新</button>
+        <button onClick={loadHistory} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 bg-white text-gray-600">刷新</button>
 
         <div className="ml-auto flex gap-2">
           <button onClick={handleExport} className="px-3 py-1 text-sm bg-gray-100 border border-gray-300 rounded hover:bg-gray-200">

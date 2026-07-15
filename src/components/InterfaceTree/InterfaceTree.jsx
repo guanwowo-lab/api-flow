@@ -1,11 +1,32 @@
 import { useState } from 'react'
 
+const CATEGORY_ORDER = [
+  '认证服务',
+  '基础数据服务',
+  '地址基础数据',
+  '分类基础数据',
+  '品牌基础数据',
+  '快递公司基础数据',
+  '商品服务',
+  '订单服务',
+  '售后订单服务',
+]
+
 export default function InterfaceTree({ apis, selectedId, onSelect, onToggle }) {
   const grouped = {}
   for (const api of apis) {
     if (!grouped[api.category]) grouped[api.category] = []
     grouped[api.category].push(api)
   }
+
+  const sortedCategories = Object.entries(grouped).sort((a, b) => {
+    const ia = CATEGORY_ORDER.indexOf(a[0])
+    const ib = CATEGORY_ORDER.indexOf(b[0])
+    if (ia === -1 && ib === -1) return a[0].localeCompare(b[0])
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
 
   const [search, setSearch] = useState('')
 
@@ -14,14 +35,14 @@ export default function InterfaceTree({ apis, selectedId, onSelect, onToggle }) 
     : null
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 border-r border-gray-200">
-      <div className="p-3 border-b border-gray-200">
+    <div className="h-full flex flex-col bg-white border-r border-gray-200">
+      <div className="p-3 border-b border-gray-100 bg-gray-50">
         <input
           type="text"
           placeholder="搜索接口..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-400"
+          className="w-full px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-white"
         />
       </div>
 
@@ -41,7 +62,7 @@ export default function InterfaceTree({ apis, selectedId, onSelect, onToggle }) 
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
-          {Object.entries(grouped).map(([category, items]) => (
+          {sortedCategories.map(([category, items]) => (
             <CategoryGroup
               key={category}
               category={category}

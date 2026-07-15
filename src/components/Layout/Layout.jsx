@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useProject } from '../../store/ProjectContext'
 import CredentialBar from '../CredentialBar/CredentialBar'
 import InterfaceTree from '../InterfaceTree/InterfaceTree'
 import ApiTest from '../../pages/ApiTest/ApiTest'
@@ -19,10 +20,15 @@ const NAV_ITEMS = [
 ]
 
 export default function Layout() {
+  const { dispatch } = useProject()
   const [credentials, setCredentials] = useState({ appKey: '', appSecret: '', accessToken: '' })
   const [env, setEnv] = useState('test')
   const [activeView, setActiveView] = useState('apiTest')
   const [selectedApiId, setSelectedApiId] = useState(null)
+
+  const handleTokenUpdate = useCallback(token => {
+    setCredentials(prev => ({ ...prev, accessToken: token }))
+  }, [])
 
   const selectedApi = useMemo(
     () => allApis.find(a => a.id === selectedApiId),
@@ -39,7 +45,7 @@ export default function Layout() {
   }, [])
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-100">
       <CredentialBar
         credentials={credentials}
         onChange={setCredentials}
@@ -55,7 +61,11 @@ export default function Layout() {
             selectedId={selectedApiId}
             onSelect={id => {
               setSelectedApiId(id)
-              setActiveView('apiTest')
+              if (activeView === 'batchTest') {
+                window.dispatchEvent(new CustomEvent('batchAddApi', { detail: id }))
+              } else {
+                setActiveView('apiTest')
+              }
             }}
           />
         </div>
@@ -77,6 +87,12 @@ export default function Layout() {
                 {item.label}
               </button>
             ))}
+            <button
+              onClick={() => dispatch({ type: 'SET_VIEW', payload: 'home' })}
+              className="ml-auto px-4 py-2 text-sm text-gray-500 hover:text-blue-600 border-b-2 border-transparent hover:border-blue-300 transition-colors"
+            >
+              ← 返回首页
+            </button>
           </div>
 
           {/* Content area */}
@@ -86,15 +102,14 @@ export default function Layout() {
                 api={selectedApi}
                 credentials={credentials}
                 env={env}
-                onTokenUpdate={token => setCredentials(prev => ({ ...prev, accessToken: token }))}
+                onTokenUpdate={handleTokenUpdate}
               />
             )}
             {activeView === 'batchTest' && (
               <BatchTest
-                apis={allApis}
                 credentials={credentials}
                 env={env}
-                onTokenUpdate={token => setCredentials(prev => ({ ...prev, accessToken: token }))}
+                onTokenUpdate={handleTokenUpdate}
               />
             )}
             {activeView === 'history' && (

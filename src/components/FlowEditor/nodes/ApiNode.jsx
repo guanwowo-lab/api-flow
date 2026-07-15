@@ -20,10 +20,10 @@ export default function ApiNode({ data, selected }) {
           fontSize: 12, color: '#fff', fontWeight: 'bold',
         }}
       >
-        <Handle type="source" id="t" position={Position.Top} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
-        <Handle type="source" id="b" position={Position.Bottom} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
-        <Handle type="source" id="l" position={Position.Left} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
-        <Handle type="source" id="r" position={Position.Right} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="st" position={Position.Top} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="sb" position={Position.Bottom} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="sl" position={Position.Left} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
+        <Handle type="source" id="sr" position={Position.Right} style={{ background: color, width: 6, height: 6, opacity: (data.connectMode || selected) ? 1 : 0 }} />
         {(data.label || 'A')[0]}
       </div>
 
@@ -32,18 +32,11 @@ export default function ApiNode({ data, selected }) {
         <div style={{
           position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
           background: bg, border: `2px solid ${border}`, borderRadius: 8,
-          padding: '8px 12px', minWidth: 160, zIndex: 1000,
+          padding: '6px 10px', zIndex: 1000,
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)', fontSize: 12,
           whiteSpace: 'nowrap',
         }}>
-          <div style={{ fontWeight: 600, marginBottom: 2 }}>{data.label}</div>
-          <div style={{ color: '#666', fontFamily: 'monospace', fontSize: 11 }}>
-            <span style={{
-              display: 'inline-block', background: color, color: '#fff', borderRadius: 3,
-              padding: '0 4px', marginRight: 4, fontSize: 10, fontWeight: 600,
-            }}>{data.method}</span>
-            {data.url}
-          </div>
+          <div style={{ fontWeight: 600 }}>{data.label}</div>
         </div>
       )}
     </div>

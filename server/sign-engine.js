@@ -1,5 +1,6 @@
 import CryptoJS from 'crypto-js'
-import { sm3 } from 'sm-crypto'
+import smCrypto from 'sm-crypto'
+const { sm3 } = smCrypto
 
 /**
  * MD5 32-bit lowercase

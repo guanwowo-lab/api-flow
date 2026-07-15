@@ -4,21 +4,49 @@
     "name": "提交订单",
     "category": "订单服务",
     "method": "POST",
-    "path": "/open/api/order/submitOrder",
+    "path": "/open/api/order/createOrder",
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "submitState", "label": "提交状态", "required": true, "type": "enum", "options": ["1001", "1002"], "optionLabels": ["1001-预占库存(草稿)", "1002-直接生成正式订单"], "default": "1001" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" },
-      { "name": "skuCode", "label": "SKU编码", "required": true, "type": "string" },
-      { "name": "quantity", "label": "数量", "required": true, "type": "number", "default": 1 },
-      { "name": "receiverName", "label": "收货人姓名", "required": true, "type": "string" },
-      { "name": "receiverMobile", "label": "收货人手机号", "required": true, "type": "string" },
-      { "name": "receiverAddress", "label": "收货详细地址", "required": true, "type": "string" },
-      { "name": "provinceCode", "label": "省编码", "required": true, "type": "string" },
-      { "name": "cityCode", "label": "市编码", "required": true, "type": "string" },
-      { "name": "areaCode", "label": "区编码", "required": true, "type": "string" },
-      { "name": "streetCode", "label": "街道编码", "required": false, "type": "string" }
+
+      { "name": "tparOrderCode", "label": "客户方订单编号（可为空）", "required": false, "type": "string", "desc": "客户方自己的订单编号，建议传值以便后续用客户订单号操作" },
+
+      { "name": "orderAmount", "label": "订单交易总金额", "required": true, "type": "number", "desc": "提交订单的总金额，不包括运费" },
+      { "name": "orderFreightAmount", "label": "订单运费总金额", "required": true, "type": "number", "desc": "包邮传0" },
+
+      { "name": "submitState", "label": "是否预占订单", "required": true, "type": "enum", "options": ["1001", "1002"], "optionLabels": ["1001-预占库存(草稿，需再调确认预占接口)", "1002-直接生成正式订单"], "default": "1001", "desc": "1001预占库存不实际下单，需调确认预占接口；1002直接下单" },
+
+      { "name": "receiveName", "label": "收货人姓名", "required": true, "type": "string" },
+      { "name": "receiveMobile", "label": "收货人手机号", "required": false, "type": "string", "desc": "与receivePhone至少填一个" },
+      { "name": "receivePhone", "label": "收货人座机号", "required": false, "type": "string", "desc": "与receiveMobile至少填一个" },
+
+      { "name": "provinceId", "label": "收货人省Id编码", "required": true, "type": "number", "desc": "必须是云中鹤地址库的地址编码" },
+      { "name": "cityId", "label": "收货人市Id编码", "required": true, "type": "number", "desc": "必须是云中鹤地址库的地址编码" },
+      { "name": "countyId", "label": "收货人区Id编码", "required": true, "type": "number", "desc": "必须是云中鹤地址库的地址编码" },
+      { "name": "townId", "label": "收货人镇/街道Id编码", "required": false, "type": "number", "desc": "必须是云中鹤地址库的地址编码" },
+
+      { "name": "address", "label": "收货人详细地址", "required": true, "type": "string" },
+      { "name": "buyerMsg", "label": "订单买家留言", "required": false, "type": "string" },
+
+      { "name": "invoiceState", "label": "是否开发票", "required": true, "type": "enum", "options": ["1001", "1002"], "optionLabels": ["1001-不开发票", "1002-开发票"], "default": "1001", "desc": "1001不开发票，1002需要开发票（发票信息必填）" },
+      { "name": "invoiceType", "label": "发票类型", "required": false, "type": "enum", "options": ["", "1", "2"], "optionLabels": ["不填", "1-增值税专用发票", "2-增值税普通电子发票"], "desc": "invoiceState=1002时此字段不能为空" },
+      { "name": "invoiceTitle", "label": "发票抬头", "required": false, "type": "string", "desc": "invoiceState=1002时此字段不能为空" },
+      { "name": "invoiceContent", "label": "发票内容", "required": false, "type": "string", "desc": "invoiceState=1002时此字段不能为空" },
+      { "name": "invoiceSubjectType", "label": "开票主体类型", "required": false, "type": "enum", "options": ["", "1001", "1002"], "optionLabels": ["不填", "1001-企业", "1002-个人"], "desc": "invoiceState=1002时此字段不能为空" },
+      { "name": "invoiceTaxNo", "label": "发票税号", "required": false, "type": "string" },
+
+      { "name": "goodsSkuCodes", "label": "商品SKU编码（逗号分隔）", "required": true, "type": "string", "desc": "订单购买的商品SKU编码，多个用逗号分隔" },
+      { "name": "sellPrices", "label": "商品单价（逗号分隔）", "required": true, "type": "string", "desc": "与goodsSkuCodes按位置一一对应" },
+      { "name": "sellQtys", "label": "商品数量（逗号分隔）", "required": true, "type": "string", "desc": "与goodsSkuCodes按位置一一对应" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Object", "docDesc": "接口返回的业务数据" },
+      { "name": "result.tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单号(未拆单前的订单号)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -31,7 +59,16 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string", "desc": "与parentOrderCode不能同时为空，至少传一个" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string", "desc": "与tparOrderCode不能同时为空，至少传一个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -44,8 +81,18 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" },
-      { "name": "cancelReason", "label": "取消原因", "required": false, "type": "string" }
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": false, "type": "string", "desc": "云中鹤拆单后的子订单号" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.cancelStatus", "docType": "Integer", "docDesc": "取消处理状态(1000:取消成功,1010:取消审核中)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -58,11 +105,31 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
-      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
-      { "name": "orderStatus", "label": "订单状态", "required": false, "type": "string" },
-      { "name": "startTime", "label": "开始时间", "required": false, "type": "string" },
-      { "name": "endTime", "label": "结束时间", "required": false, "type": "string" }
+      { "name": "pageNum", "label": "分页页码", "required": false, "type": "number", "default": 1, "desc": "不传默认为第1页" },
+      { "name": "pageSize", "label": "每页数据条数", "required": false, "type": "number", "default": 100, "desc": "不传默认为100条，最大不超过100" },
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": false, "type": "string", "desc": "拆单后的子订单编号" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.pageNum", "docType": "Integer", "docDesc": "当前分页页码" },
+      { "name": "result.pageSize", "docType": "Integer", "docDesc": "当前分页每页数据条数" },
+      { "name": "result.totalCount", "docType": "Integer", "docDesc": "当前数据总条数" },
+      { "name": "result.totalPage", "docType": "Integer", "docDesc": "当前数据总页数" },
+      { "name": "result.orderList", "docType": "Array", "docDesc": "订单信息列表" },
+      { "name": "result.orderList[].tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.orderList[].parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.orderList[].parentOrderAmount", "docType": "Double", "docDesc": "父订单交易总金额" },
+      { "name": "result.orderList[].orderFreightAmount", "docType": "Double", "docDesc": "父订单交易总运费" },
+      { "name": "result.orderList[].buyerMsg", "docType": "String", "docDesc": "买家留言" },
+      { "name": "result.orderList[].childOrderList", "docType": "Array", "docDesc": "子订单列表" },
+      { "name": "result.orderList[].childOrderList[].orderCode", "docType": "String", "docDesc": "子订单编号(云中鹤拆单后的订单编号)" },
+      { "name": "result.orderList[].childOrderList[].orderAmount", "docType": "Double", "docDesc": "子订单交易总金额" },
+      { "name": "result.orderList[].childOrderList[].createTime", "docType": "Date", "docDesc": "子订单创建时间" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -75,7 +142,55 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": false, "type": "string", "desc": "云中鹤拆单后的子订单号" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.parentOrderAmount", "docType": "Double", "docDesc": "云中鹤父订单交易总金额" },
+      { "name": "result.orderFreightAmount", "docType": "Double", "docDesc": "云中鹤父订单交易总运费" },
+      { "name": "result.buyerMsg", "docType": "String", "docDesc": "买家留言" },
+      { "name": "result.createTime", "docType": "Date", "docDesc": "云中鹤父订单创建时间" },
+      { "name": "result.orderReceiveAddress", "docType": "Object", "docDesc": "订单收货地址信息" },
+      { "name": "result.orderReceiveAddress.receiveName", "docType": "String", "docDesc": "收货人姓名" },
+      { "name": "result.orderReceiveAddress.receiveMobile", "docType": "String", "docDesc": "收货人手机号" },
+      { "name": "result.orderReceiveAddress.receivePhone", "docType": "String", "docDesc": "收货人座机号" },
+      { "name": "result.orderReceiveAddress.provinceId", "docType": "Integer", "docDesc": "省Id" },
+      { "name": "result.orderReceiveAddress.cityId", "docType": "Integer", "docDesc": "市Id" },
+      { "name": "result.orderReceiveAddress.countyId", "docType": "Integer", "docDesc": "区Id" },
+      { "name": "result.orderReceiveAddress.townId", "docType": "Integer", "docDesc": "镇/街道Id" },
+      { "name": "result.orderReceiveAddress.address", "docType": "String", "docDesc": "详细地址" },
+      { "name": "result.childOrderList", "docType": "Array", "docDesc": "子订单列表" },
+      { "name": "result.childOrderList[].orderCode", "docType": "String", "docDesc": "子订单编号" },
+      { "name": "result.childOrderList[].orderAmount", "docType": "Double", "docDesc": "子订单交易总金额" },
+      { "name": "result.childOrderList[].createTime", "docType": "Date", "docDesc": "子订单创建时间" },
+      { "name": "result.childOrderList[].deliverTime", "docType": "Date", "docDesc": "子订单发货时间" },
+      { "name": "result.childOrderList[].confirmTime", "docType": "Date", "docDesc": "子订单确认收货时间" },
+      { "name": "result.childOrderList[].signTime", "docType": "Date", "docDesc": "子订单签收时间" },
+      { "name": "result.childOrderList[].cancelTime", "docType": "Date", "docDesc": "子订单取消时间" },
+      { "name": "result.childOrderList[].orderGoodsList", "docType": "Array", "docDesc": "子订单购买的商品信息列表" },
+      { "name": "result.childOrderList[].orderGoodsList[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].goodsSkuName", "docType": "String", "docDesc": "商品Sku名称" },
+      { "name": "result.childOrderList[].orderGoodsList[].goodsImageUrl", "docType": "String", "docDesc": "商品缩略图片地址" },
+      { "name": "result.childOrderList[].orderGoodsList[].brandCode", "docType": "String", "docDesc": "商品品牌编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].brandName", "docType": "String", "docDesc": "商品品牌名称" },
+      { "name": "result.childOrderList[].orderGoodsList[].firstCategoryCode", "docType": "String", "docDesc": "商品一级分类编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].firstCategoryName", "docType": "String", "docDesc": "商品一级分类名称" },
+      { "name": "result.childOrderList[].orderGoodsList[].secondCategoryCode", "docType": "String", "docDesc": "商品二级分类编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].secondCategoryName", "docType": "String", "docDesc": "商品二级分类名称" },
+      { "name": "result.childOrderList[].orderGoodsList[].lastCategoryCode", "docType": "String", "docDesc": "商品三级分类编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].lastCategoryName", "docType": "String", "docDesc": "商品三级分类名称" },
+      { "name": "result.childOrderList[].orderGoodsList[].sellPrice", "docType": "Double", "docDesc": "商品销售价" },
+      { "name": "result.childOrderList[].orderGoodsList[].marketPrice", "docType": "Double", "docDesc": "商品市场价" },
+      { "name": "result.childOrderList[].orderGoodsList[].sellQty", "docType": "Integer", "docDesc": "商品购买数量" },
+      { "name": "result.childOrderList[].orderGoodsList[].taxCode", "docType": "String", "docDesc": "税收编码" },
+      { "name": "result.childOrderList[].orderGoodsList[].taxRate", "docType": "Double", "docDesc": "税率" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -88,7 +203,22 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string", "desc": "与parentOrderCode不能同时为空，至少传一个" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string", "desc": "与tparOrderCode不能同时为空，至少传一个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.tparOrderCode", "docType": "String", "docDesc": "客户方订单编号" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.shipmentList", "docType": "Array", "docDesc": "订单发货明细信息" },
+      { "name": "result.shipmentList[].orderCode", "docType": "String", "docDesc": "子订单编码" },
+      { "name": "result.shipmentList[].expressCode", "docType": "String", "docDesc": "快递公司编码" },
+      { "name": "result.shipmentList[].expressName", "docType": "String", "docDesc": "快递公司名称" },
+      { "name": "result.shipmentList[].expressNumber", "docType": "String", "docDesc": "快递编号" },
+      { "name": "result.shipmentList[].goodsSkuList", "docType": "Array", "docDesc": "发货商品列表" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -101,7 +231,21 @@
     "signRequired": false,
     "params": [
       { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "orderCode", "label": "订单号", "required": true, "type": "string" }
+      { "name": "tparOrderCode", "label": "客户方订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "parentOrderCode", "label": "云中鹤父订单编号", "required": false, "type": "string", "desc": "tparOrderCode、parentOrderCode、orderCode至少传一个" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": false, "type": "string", "desc": "云中鹤拆单后的子订单号" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "订单发票信息列表" },
+      { "name": "result[].invoiceTitle", "docType": "String", "docDesc": "发票抬头" },
+      { "name": "result[].invoiceContent", "docType": "String", "docDesc": "发票内容" },
+      { "name": "result[].invoiceType", "docType": "Integer", "docDesc": "发票类型(1:增值税专用发票,2:增值税普通电子发票)" },
+      { "name": "result[].invoiceSubjectType", "docType": "Integer", "docDesc": "开票主体类型(1001:企业,1002:个人)" },
+      { "name": "result[].invoiceTaxNo", "docType": "String", "docDesc": "发票税号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   }

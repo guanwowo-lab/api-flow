@@ -4,7 +4,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const HISTORY_DIR = join(__dirname, '..', 'server', 'history')
+// Store history outside Vite's watch scope to prevent page reload on file write
+const HISTORY_DIR = join(__dirname, '..', 'node_modules', '.cache', 'api-tester', 'history')
 
 function todayFile() {
   const d = new Date()
@@ -29,13 +30,26 @@ async function writeHistory(file, records) {
 export function createHistoryRouter() {
   const router = Router()
 
-  // Save a test result
+  // Save a test result (global max 30 records across all files)
   router.post('/history', async (req, res) => {
     const record = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...req.body, time: Date.now() }
-    const file = todayFile()
-    const records = await readHistory(file)
-    records.push(record)
-    await writeHistory(file, records)
+
+    // Load all records from all files
+    const files = (await readdir(HISTORY_DIR).catch(() => [])).filter(f => f.endsWith('.json'))
+    let all = []
+    for (const file of files) {
+      all = all.concat(await readHistory(file))
+    }
+    all.push(record)
+    // Keep only latest 30 globally
+    all.sort((a, b) => b.time - a.time)
+    const keep = all.slice(0, 30)
+
+    // Delete old files, write current day file with kept records
+    for (const file of files) {
+      try { await unlink(join(HISTORY_DIR, file)) } catch {}
+    }
+    await writeHistory(todayFile(), keep.reverse())
     res.json({ success: true, id: record.id })
   })
 
@@ -53,6 +67,7 @@ export function createHistoryRouter() {
     all.sort((a, b) => b.time - a.time)
     if (apiId) all = all.filter(r => r.apiId === apiId)
     if (pass !== undefined) all = all.filter(r => (pass === 'true') === r.pass)
+    all = all.slice(0, 30)
     res.json(all)
   })
 

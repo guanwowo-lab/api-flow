@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import ApiEditor from '../ApiExtractor/ApiEditor'
-import db from '../../store/db'
+import { apiFolderApi } from '../../store/api'
 import { aiParseDocument } from '../../engines/aiParser'
 import { parseDocument } from '../../engines/docParser'
 
@@ -12,14 +12,7 @@ export default function ApiLibrary() {
   const [newName, setNewName] = useState('')
 
   useEffect(() => {
-    db.apiFolders.toArray().then((all) => {
-      const junk = all.filter((f) => f.name.startsWith('垃圾数据'))
-      if (junk.length > 0) {
-        Promise.all(junk.map((f) => db.apiFolders.delete(f.id))).then(() => loadApiFolders())
-      } else {
-        loadApiFolders()
-      }
-    })
+    loadApiFolders()
   }, [])
 
   const handleCreateFolder = async () => {
@@ -30,7 +23,8 @@ export default function ApiLibrary() {
     setNewName('')
   }
 
-  const handleDeleteFolder = async (id) => {
+  const handleDeleteFolder = async (id, name) => {
+    if (!confirm(`确定删除文件夹"${name}"吗？文件夹内的所有接口将被永久清除，此操作不可恢复。`)) return
     await deleteApiFolder(id)
     if (selectedId === id) setSelectedId(null)
   }
@@ -81,7 +75,7 @@ export default function ApiLibrary() {
                     <span className="text-xs text-gray-400 ml-1">({(f.apis || []).length})</span>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteFolder(f.id) }}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteFolder(f.id, f.name) }}
                     className="text-red-400 hover:text-red-600 text-xs ml-2 shrink-0"
                   >
                     删除
@@ -115,7 +109,7 @@ function FolderDetail({ folderId }) {
       return
     }
     setLoading(true)
-    db.apiFolders.get(folderId).then((folder) => {
+    apiFolderApi.get(folderId).then((folder) => {
       if (folder) {
         setDraftApis((folder.apis || []).map((a) => ({ ...a, children: a.children || [] })))
         setFolderName(folder.name)
@@ -182,7 +176,7 @@ function FolderDetail({ folderId }) {
 
   const handleSave = async () => {
     if (!folderId) return
-    const folder = await db.apiFolders.get(folderId)
+    const folder = await apiFolderApi.get(folderId)
     if (!folder) return
     await saveApiFolder({ ...folder, apis: draftApis })
     setDirty(false)

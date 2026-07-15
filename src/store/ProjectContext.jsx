@@ -1,20 +1,21 @@
 import { createContext, useContext, useReducer, useCallback } from 'react'
-import db from './db'
+import { projectApi, apiFolderApi, projectFolderApi, extractApi, matchItemApi, diagramApi } from './api'
+import { supabase } from './supabaseClient'
 
 const ProjectContext = createContext(null)
 
 const initialState = {
-  project: null,           // { id, name, createdAt, updatedAt }
-  projectList: [],         // [{ id, name, createdAt, updatedAt }]
-  myApis: [],              // [{ id, name, method, url, inputParams, outputParams }]
-  apiFolders: [],           // [{ id, name, apis: [], createdAt, updatedAt }]
-  extractA: null,          // { id, projectId, side: 'A', apis: [] }
-  extractB: null,          // { id, projectId, side: 'B', apis: [] }
-  matches: null,           // { id, projectId, pairs: [] }
-  sequenceDiagram: null,   // { id, projectId, type: 'sequence', data: { nodes, edges } }
-  mappingDiagram: null,    // { id, projectId, type: 'mapping', data: { nodes, edges } }
-  folder: null,            // { id, projectId, name }
-  projectFolders: [],      // [{ id, projectId, name, createdAt, updatedAt }]
+  project: null,
+  projectList: [],
+  myApis: [],
+  apiFolders: [],
+  extractA: null,
+  extractB: null,
+  matches: null,
+  sequenceDiagram: null,
+  mappingDiagram: null,
+  folder: null,
+  projectFolders: [],
   activeView: 'home',
 }
 
@@ -32,7 +33,11 @@ function reducer(state, action) {
     case 'SET_MATCHES':
       return { ...state, matches: action.payload }
     case 'SET_DIAGRAM':
-      if (!action.payload) return state
+      if (!action.payload) {
+        if (action.diagramType === 'sequence') return { ...state, sequenceDiagram: null }
+        if (action.diagramType === 'mapping') return { ...state, mappingDiagram: null }
+        return state
+      }
       return action.payload.type === 'sequence'
         ? { ...state, sequenceDiagram: action.payload }
         : { ...state, mappingDiagram: action.payload }
@@ -55,185 +60,134 @@ export function ProjectProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState)
 
   const loadProjects = useCallback(async () => {
-    const list = await db.projects.orderBy('updatedAt').reverse().toArray()
+    // 优先显示缓存数据
+    try {
+      const cached = localStorage.getItem('apiflow_projects')
+      if (cached) dispatch({ type: 'SET_PROJECT_LIST', payload: JSON.parse(cached) })
+    } catch {}
+    const list = await projectApi.list()
     dispatch({ type: 'SET_PROJECT_LIST', payload: list })
+    try { localStorage.setItem('apiflow_projects', JSON.stringify(list)) } catch {}
   }, [])
 
+  const renameProject = useCallback(async (id, name) => {
+    await projectApi.rename(id, name)
+    await loadProjects()
+  }, [loadProjects])
+
+  const deleteProject = useCallback(async (id) => {
+    await projectApi.remove(id)
+    await loadProjects()
+  }, [loadProjects])
+
   const createProject = useCallback(async (name) => {
-    const now = new Date().toISOString()
-    const id = await db.projects.add({ name, createdAt: now, updatedAt: now })
-    const project = { id, name, createdAt: now, updatedAt: now }
+    const project = await projectApi.create(name)
     dispatch({ type: 'SET_PROJECT', payload: project })
     await loadProjects()
     return project
   }, [loadProjects])
 
   const openProject = useCallback(async (id) => {
-    const project = await db.projects.get(id)
+    const project = await projectApi.get(id)
     if (!project) return
     dispatch({ type: 'SET_PROJECT', payload: project })
     dispatch({ type: 'SET_FOLDER', payload: null })
 
-    let folders = await db.projectFolders.where({ projectId: id }).toArray()
-
-    // 幂等迁移：检查是否有遗漏未关联 folderId 的旧记录
-    const hasMigrationWork = async () => {
-      const extract = await db.apiExtracts.where({ projectId: id }).filter((e) => !e.folderId).first()
-      if (extract) return true
-      const match = await db.matches.where({ projectId: id }).filter((m) => !m.folderId).first()
-      if (match) return true
-      const diagram = await db.flowDiagrams.where({ projectId: id }).filter((d) => !d.folderId).first()
-      if (diagram) return true
-      return false
-    }
-
-    if (await hasMigrationWork()) {
-      const now = new Date().toISOString()
-      // 使用已有文件夹或创建默认文件夹
-      let folderId = folders.length > 0 ? folders[0].id : null
-      if (!folderId) {
-        folderId = await db.projectFolders.add({ projectId: id, name: '默认对接文件夹', createdAt: now, updatedAt: now })
-      }
-
-      // 迁移遗漏的旧数据
-      for (const store of [db.apiExtracts, db.matches, db.flowDiagrams]) {
-        const docs = await store.where({ projectId: id }).filter((d) => !d.folderId).toArray()
-        for (const doc of docs) {
-          await store.update(doc.id, { folderId })
-        }
-      }
-
-      folders = await db.projectFolders.where({ projectId: id }).toArray()
-    }
+    const folders = await projectFolderApi.list(id)
 
     dispatch({ type: 'SET_PROJECT_FOLDERS', payload: folders })
     dispatch({ type: 'SET_VIEW', payload: 'projectFolders' })
   }, [])
 
   const loadApiFolders = useCallback(async () => {
-    const list = await db.apiFolders.orderBy('updatedAt').reverse().toArray()
+    // 优先显示缓存数据
+    try {
+      const cached = localStorage.getItem('apiflow_api_folders')
+      if (cached) dispatch({ type: 'SET_API_FOLDERS', payload: JSON.parse(cached) })
+    } catch {}
+    const list = await apiFolderApi.list()
     dispatch({ type: 'SET_API_FOLDERS', payload: list })
+    try { localStorage.setItem('apiflow_api_folders', JSON.stringify(list)) } catch {}
   }, [])
 
   const saveApiFolder = useCallback(async (folder) => {
-    const now = new Date().toISOString()
-    const data = {
-      name: folder.name,
-      apis: folder.apis || [],
-      createdAt: folder.createdAt || now,
-      updatedAt: now,
-    }
-    if (folder.id) {
-      await db.apiFolders.update(folder.id, data)
-      data.id = folder.id
-    } else {
-      data.id = await db.apiFolders.add(data)
-    }
+    const result = await apiFolderApi.save(folder)
     await loadApiFolders()
-    return data
+    return result
   }, [loadApiFolders])
 
   const deleteApiFolder = useCallback(async (id) => {
-    await db.apiFolders.delete(id)
+    await apiFolderApi.remove(id)
     await loadApiFolders()
   }, [loadApiFolders])
 
   const loadProjectFolders = useCallback(async (projectId) => {
-    const list = await db.projectFolders.where({ projectId }).toArray()
+    const list = await projectFolderApi.list(projectId)
     dispatch({ type: 'SET_PROJECT_FOLDERS', payload: list })
   }, [])
 
   const createProjectFolder = useCallback(async (projectId, name) => {
-    const now = new Date().toISOString()
-    const id = await db.projectFolders.add({ projectId, name, createdAt: now, updatedAt: now })
+    const folder = await projectFolderApi.create(projectId, name)
     await loadProjectFolders(projectId)
-    return { id, projectId, name, createdAt: now, updatedAt: now }
+    return folder
   }, [loadProjectFolders])
 
   const deleteProjectFolder = useCallback(async (projectId, id) => {
-    await db.projectFolders.delete(id)
-    // 同时清理该文件夹下的数据
-    const extracts = await db.apiExtracts.where({ folderId: id }).toArray()
-    for (const e of extracts) await db.apiExtracts.delete(e.id)
-    const matchDocs = await db.matches.where({ folderId: id }).toArray()
-    for (const m of matchDocs) await db.matches.delete(m.id)
-    const diagrams = await db.flowDiagrams.where({ folderId: id }).toArray()
-    for (const d of diagrams) await db.flowDiagrams.delete(d.id)
+    await projectFolderApi.remove(projectId, id)
     await loadProjectFolders(projectId)
   }, [loadProjectFolders])
 
   const openFolder = useCallback(async (folder) => {
     dispatch({ type: 'SET_FOLDER', payload: folder })
 
-    const extractA = await db.apiExtracts.where({ folderId: folder.id, side: 'A' }).first()
-    const extractB = await db.apiExtracts.where({ folderId: folder.id, side: 'B' }).first()
-    if (extractA) dispatch({ type: 'SET_EXTRACT', payload: extractA })
-    else dispatch({ type: 'SET_EXTRACT', payload: { projectId: folder.projectId, folderId: folder.id, side: 'A', apis: [] } })
+    const [extractB, items, seq, map] = await Promise.all([
+      extractApi.get(folder.id, 'B'),
+      matchItemApi.list(folder.id),
+      diagramApi.get(folder.id, 'sequence'),
+      diagramApi.get(folder.id, 'mapping'),
+    ])
+
     if (extractB) dispatch({ type: 'SET_EXTRACT', payload: extractB })
     else dispatch({ type: 'SET_EXTRACT', payload: null, side: 'B' })
 
-    const matches = await db.matches.where({ folderId: folder.id }).first()
-    if (matches) dispatch({ type: 'SET_MATCHES', payload: matches })
-    else dispatch({ type: 'SET_MATCHES', payload: null })
+    // 转换为 {[clientApiKey]: mappings[]}
+    const mappingsRecord = {}
+    for (const item of items) {
+      mappingsRecord[item.clientApiKey] = item.mappings || []
+    }
+    dispatch({ type: 'SET_MATCHES', payload: mappingsRecord })
 
-    const seq = await db.flowDiagrams.where({ folderId: folder.id, type: 'sequence' }).first()
     if (seq) dispatch({ type: 'SET_DIAGRAM', payload: seq })
-    else dispatch({ type: 'SET_DIAGRAM', payload: null })
+    else dispatch({ type: 'SET_DIAGRAM', payload: null, diagramType: 'sequence' })
 
-    const map = await db.flowDiagrams.where({ folderId: folder.id, type: 'mapping' }).first()
     if (map) dispatch({ type: 'SET_DIAGRAM', payload: map })
-    else dispatch({ type: 'SET_DIAGRAM', payload: null })
+    else dispatch({ type: 'SET_DIAGRAM', payload: null, diagramType: 'mapping' })
 
-    if (extractB && extractB.apis && extractB.apis.length > 0) {
-      dispatch({ type: 'SET_VIEW', payload: 'match' })
-    } else {
-      dispatch({ type: 'SET_VIEW', payload: 'upload' })
-    }
+    // Go to choice page instead of directly to match/upload
+    dispatch({ type: 'SET_VIEW', payload: 'folderChoice' })
   }, [])
 
-  const saveExtract = useCallback(async (projectId, folderId, side, apis) => {
-    const existing = await db.apiExtracts.where({ folderId, side }).first()
-    const data = { projectId, folderId, side, apis }
-    if (existing) {
-      await db.apiExtracts.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.apiExtracts.add(data)
-    }
+  const saveExtract = useCallback(async (folderId, side, apis) => {
+    const data = await extractApi.save(folderId, side, apis)
     dispatch({ type: 'SET_EXTRACT', payload: data })
-    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+    await projectFolderApi.touch(folderId)
   }, [])
 
-  const saveMatches = useCallback(async (projectId, folderId, matchData) => {
-    const existing = await db.matches.where({ folderId }).first()
-    const data = { ...matchData, projectId, folderId }
-    if (existing) {
-      await db.matches.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.matches.add(data)
-    }
-    dispatch({ type: 'SET_MATCHES', payload: data })
-    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+  const saveMatches = useCallback(async (folderId, clientApiKey, mappings) => {
+    await matchItemApi.save(folderId, clientApiKey, mappings)
+    await projectFolderApi.touch(folderId)
   }, [])
 
-  const saveDiagram = useCallback(async (projectId, folderId, type, diagramData) => {
-    const existing = await db.flowDiagrams.where({ folderId, type }).first()
-    const data = { projectId, folderId, type, data: diagramData }
-    if (existing) {
-      await db.flowDiagrams.update(existing.id, data)
-      data.id = existing.id
-    } else {
-      data.id = await db.flowDiagrams.add(data)
-    }
+  const saveDiagram = useCallback(async (folderId, type, diagramData) => {
+    const data = await diagramApi.save(folderId, type, diagramData)
     dispatch({ type: 'SET_DIAGRAM', payload: data })
-    await db.projectFolders.update(folderId, { updatedAt: new Date().toISOString() })
+    await projectFolderApi.touch(folderId)
   }, [])
 
   return (
     <ProjectContext.Provider value={{
       state, dispatch,
-      loadProjects, createProject, openProject,
+      loadProjects, createProject, renameProject, deleteProject, openProject,
       saveExtract, saveMatches, saveDiagram,
       loadApiFolders, saveApiFolder, deleteApiFolder,
       loadProjectFolders, createProjectFolder, deleteProjectFolder, openFolder,

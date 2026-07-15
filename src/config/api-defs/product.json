@@ -7,14 +7,30 @@
     "path": "/open/api/goods/queryGoodsList",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
-      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
-      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string" },
-      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string" },
-      { "name": "goodsName", "label": "商品名称", "required": false, "type": "string" },
-      { "name": "stockStatus", "label": "库存状态", "required": false, "type": "enum", "options": ["", "1001", "1002"], "optionLabels": ["全部", "有库存", "无库存"] },
-      { "name": "addressCode", "label": "可销售区域编码", "required": false, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，有效期24小时", "docNote": "必填" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1, "docType": "Integer", "docDesc": "分页页码，参数不传或空，接口默认为第1页", "docNote": "非必填" },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20, "docType": "Integer", "docDesc": "每页显示条数，参数不传或空，接口默认为100，每次请求最大不超过100条", "docNote": "非必填" },
+      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string", "docType": "String", "docDesc": "商品分类编码检索" },
+      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string", "docType": "String", "docDesc": "品牌编码检索" },
+      { "name": "goodsName", "label": "商品名称", "required": false, "type": "string", "docType": "String", "docDesc": "商品名称检索" },
+      { "name": "stockStatus", "label": "库存状态", "required": false, "type": "enum", "options": ["", "1001", "1002"], "optionLabels": ["全部", "有库存", "无库存"], "docType": "Integer", "docDesc": "库存状态检索(1001:有库存，1002:无库存)" },
+      { "name": "addressCode", "label": "可销售区域编码", "required": false, "type": "string", "docType": "String", "docDesc": "商品可销售地址区域编码，作为条件检索商品" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Object", "docDesc": "接口返回的业务数据" },
+      { "name": "result.pageNum", "docType": "Integer", "docDesc": "当前分页页码" },
+      { "name": "result.pageSize", "docType": "Integer", "docDesc": "当前分页每页数据条数" },
+      { "name": "result.totalCount", "docType": "Integer", "docDesc": "当前数据总条数" },
+      { "name": "result.totalPage", "docType": "Integer", "docDesc": "当前数据总页数" },
+      { "name": "result.goodsSkuList", "docType": "Array", "docDesc": "商品信息列表" },
+      { "name": "result.goodsSkuList[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result.goodsSkuList[].goodsSkuName", "docType": "String", "docDesc": "商品Sku名称" },
+      { "name": "result.goodsSkuList[].sellPrice", "docType": "Double", "docDesc": "商品销售价格" },
+      { "name": "result.goodsSkuList[].stockNum", "docType": "Integer", "docDesc": "商品库存数量" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -23,15 +39,26 @@
     "name": "检索商品信息列表",
     "category": "商品服务",
     "method": "POST",
-    "path": "/open/api/goods/searchGoodsList",
+    "path": "/open/api/goods/queryGoodsListByCondition",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
-      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 },
-      { "name": "keyword", "label": "搜索关键词", "required": false, "type": "string" },
-      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string" },
-      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符", "docNote": "必填" },
+      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1, "docType": "Integer", "docDesc": "分页页码", "docNote": "非必填" },
+      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20, "docType": "Integer", "docDesc": "每页显示条数", "docNote": "非必填" },
+      { "name": "keyword", "label": "搜索关键词", "required": false, "type": "string", "docType": "String", "docDesc": "商品Sku编码或Sku名称检索" },
+      { "name": "categoryCode", "label": "分类编码", "required": false, "type": "string", "docType": "String", "docDesc": "分类编码" },
+      { "name": "brandCode", "label": "品牌编码", "required": false, "type": "string", "docType": "String", "docDesc": "品牌编码" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.pageNum", "docType": "Integer", "docDesc": "当前分页页码" },
+      { "name": "result.pageSize", "docType": "Integer", "docDesc": "当前分页每页数据条数" },
+      { "name": "result.totalCount", "docType": "Integer", "docDesc": "当前数据总条数" },
+      { "name": "result.totalPage", "docType": "Integer", "docDesc": "当前数据总页数" },
+      { "name": "result.goodsSkuList", "docType": "Array", "docDesc": "商品信息列表" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -43,9 +70,61 @@
     "path": "/open/api/goods/queryGoodsDetail",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "skuCode", "label": "SKU编码", "required": true, "type": "string" },
-      { "name": "goodsCode", "label": "商品编码", "required": false, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌", "docNote": "必填" },
+      { "name": "goodsSkuCode", "label": "商品SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个。goodsSkuCode和goodsCode不能同时为空", "docNote": "必填(List)" },
+      { "name": "goodsCode", "label": "商品SPU编码（可逗号分隔多个）", "required": false, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品SPU编码集合，最多不能超过2个。goodsSkuCode和goodsCode不能同时为空", "docNote": "非必填(List)" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识，true或false表示接口调用成功与否" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的商品详情列表" },
+      { "name": "result[].goodsCode", "docType": "String", "docDesc": "商品spu编码" },
+      { "name": "result[].goodsName", "docType": "String", "docDesc": "商品Spu名称" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].goodsSkuName", "docType": "String", "docDesc": "商品Sku名称" },
+      { "name": "result[].goodsSkuTitle", "docType": "String", "docDesc": "商品Sku标题" },
+      { "name": "result[].sellPrice", "docType": "Double", "docDesc": "商品销售价" },
+      { "name": "result[].marketPrice", "docType": "Double", "docDesc": "商品市场价" },
+      { "name": "result[].startQty", "docType": "Integer", "docDesc": "商品起购数量(商品至少购买数量，低于这个数量不能购买下单)" },
+      { "name": "result[].shelvesStatus", "docType": "Integer", "docDesc": "商品上下架状态(1001:上架,1002:下架)" },
+      { "name": "result[].taxCode", "docType": "String", "docDesc": "税收编码" },
+      { "name": "result[].taxRate", "docType": "Double", "docDesc": "税率" },
+      { "name": "result[].barCode", "docType": "String", "docDesc": "商品条形码" },
+      { "name": "result[].isDeleted", "docType": "Integer", "docDesc": "商品是否移除(0:否，1:移除)，被移除的商品云中鹤将不会给客户方供货" },
+      { "name": "result[].brandCode", "docType": "String", "docDesc": "商品品牌编码" },
+      { "name": "result[].brandName", "docType": "String", "docDesc": "商品品牌名称" },
+      { "name": "result[].firstCategoryCode", "docType": "String", "docDesc": "商品挂载一级分类编码" },
+      { "name": "result[].firstCategoryName", "docType": "String", "docDesc": "商品挂载一级分类名称" },
+      { "name": "result[].secondCategoryCode", "docType": "String", "docDesc": "商品挂载二级分类编码" },
+      { "name": "result[].secondCategoryName", "docType": "String", "docDesc": "商品挂载二级分类名称" },
+      { "name": "result[].lastCategoryCode", "docType": "String", "docDesc": "商品挂载三级分类编码" },
+      { "name": "result[].lastCategoryName", "docType": "String", "docDesc": "商品挂载三级分类名称" },
+      { "name": "result[].returnGoodsRules", "docType": "Long", "docDesc": "支持退货情况(1001:不支持无理由退货,1002:支持7天无理由退货,1003:支持7天无理由退货(拆封后不支持),1004:支持7天无理由退货(激活后不支持),1005:支持7天无理由退货(安装后不支持),1006:支持7天无理由退货(使用后不支持))" },
+      { "name": "result[].goodsCharacteristic", "docType": "String", "docDesc": "商品特点描述，长度建议2000字符" },
+      { "name": "result[].goodsUnit", "docType": "String", "docDesc": "商品计量单位" },
+      { "name": "result[].modelNumber", "docType": "String", "docDesc": "商品型号" },
+      { "name": "result[].productPlace", "docType": "String", "docDesc": "商品产地" },
+      { "name": "result[].haveShelfLife", "docType": "Integer", "docDesc": "是否有保质期(0:否,1:是)" },
+      { "name": "result[].shelfLife", "docType": "String", "docDesc": "保质期" },
+      { "name": "result[].fragileGoods", "docType": "Integer", "docDesc": "是否易碎(0:否,1:是)" },
+      { "name": "result[].grossWeight", "docType": "Double", "docDesc": "商品毛重" },
+      { "name": "result[].grossWeightUnit", "docType": "String", "docDesc": "商品毛重计量单位(g,kg)" },
+      { "name": "result[].density", "docType": "Double", "docDesc": "商品密度(g/cm3)" },
+      { "name": "result[].extent", "docType": "Integer", "docDesc": "商品长(含包装,单位mm)" },
+      { "name": "result[].width", "docType": "Integer", "docDesc": "商品宽(含包装,单位mm)" },
+      { "name": "result[].height", "docType": "Integer", "docDesc": "商品高(含包装,单位mm)" },
+      { "name": "result[].specList", "docType": "Array", "docDesc": "商品销售规格信息列表" },
+      { "name": "result[].specList[].specName", "docType": "String", "docDesc": "商品销售规格名称" },
+      { "name": "result[].specList[].specValue", "docType": "String", "docDesc": "商品销售规格值" },
+      { "name": "result[].descDetail", "docType": "Object", "docDesc": "商品图文详情描述对象" },
+      { "name": "result[].descDetail.goodsDescribe", "docType": "String", "docDesc": "商品图文详情描述信息(内容比较大，建议使用text字段类型来存储)" },
+      { "name": "result[].attributeList", "docType": "Array", "docDesc": "商品基础参数属性列表" },
+      { "name": "result[].attributeList[].attributeCode", "docType": "String", "docDesc": "基础属性编码" },
+      { "name": "result[].attributeList[].attributeName", "docType": "String", "docDesc": "基础属性名称" },
+      { "name": "result[].attributeList[].attributeValueCode", "docType": "String", "docDesc": "基础属性值编码" },
+      { "name": "result[].attributeList[].attributeValueName", "docType": "String", "docDesc": "基础属性值名称" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -54,11 +133,42 @@
     "name": "获取商品图片列表",
     "category": "商品服务",
     "method": "POST",
-    "path": "/open/api/goods/queryGoodsImages",
+    "path": "/open/api/goods/queryGoodsImageList",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "skuCode", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌" },
+      { "name": "goodsSkuCode", "label": "SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "商品图片信息列表" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].goodsImageList", "docType": "Array", "docDesc": "商品图片地址列表" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryGoodsOnOffSale",
+    "name": "获取商品上下架列表",
+    "category": "商品服务",
+    "method": "POST",
+    "path": "/open/api/goods/queryGoodsShelvesList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌" },
+      { "name": "goodsSkuCode", "label": "商品SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "商品上下架信息列表" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].shelvesStatus", "docType": "Integer", "docDesc": "商品上下架状态(1001:上架,1002:下架)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -70,8 +180,17 @@
     "path": "/open/api/goods/queryGoodsPriceList",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌" },
+      { "name": "goodsSkuCode", "label": "SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "商品价格信息列表" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].sellPrice", "docType": "Double", "docDesc": "商品销售价格" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -83,22 +202,17 @@
     "path": "/open/api/goods/queryGoodsStockList",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌" },
+      { "name": "goodsSkuCode", "label": "SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个" }
     ],
-    "responseMapping": { "successField": "success", "codeField": "code" }
-  },
-  {
-    "id": "queryGoodsOnOffSale",
-    "name": "获取商品上下架列表",
-    "category": "商品服务",
-    "method": "POST",
-    "path": "/open/api/goods/queryGoodsOnOffSaleList",
-    "signRequired": false,
-    "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "pageNum", "label": "页码", "required": false, "type": "number", "default": 1 },
-      { "name": "pageSize", "label": "每页数量", "required": false, "type": "number", "default": 20 }
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "商品库存信息列表" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].stockNum", "docType": "Integer", "docDesc": "商品库存数量" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   },
@@ -107,11 +221,20 @@
     "name": "获取商品销售区域列表",
     "category": "商品服务",
     "method": "POST",
-    "path": "/open/api/goods/queryGoodsSaleAreas",
+    "path": "/open/api/goods/queryGoodsSaleLimitList",
     "signRequired": false,
     "params": [
-      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
-      { "name": "skuCodes", "label": "SKU编码（多个用逗号分隔）", "required": true, "type": "string" }
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌" },
+      { "name": "goodsSkuCode", "label": "SKU编码（可逗号分隔多个）", "required": true, "type": "string", "arrayType": true, "docType": "List", "docDesc": "商品Sku编码集合，最多不能超过100个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "商品销售区域信息列表" },
+      { "name": "result[].goodsSkuCode", "docType": "String", "docDesc": "商品Sku编码" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "可销售区域地址编码" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
     ],
     "responseMapping": { "successField": "success", "codeField": "code" }
   }

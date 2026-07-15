@@ -1,0 +1,193 @@
+[
+  {
+    "id": "queryOrderAvailableReturnType",
+    "name": "查询订单可申请的售后服务类型",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/queryOrderAvailabeReturnType",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": true, "type": "string", "desc": "申请售后时以云中鹤子订单编号去申请" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.orderCode", "docType": "String", "docDesc": "云中鹤子订单编号" },
+      { "name": "result.returnTypeList", "docType": "Array", "docDesc": "可申请的售后服务类型集合" },
+      { "name": "result.returnTypeList[].returnType", "docType": "Integer", "docDesc": "售后类型(1001:退货退款,1002:仅退款,1003:退货换货)" },
+      { "name": "result.returnTypeList[].returnTypeName", "docType": "String", "docDesc": "售后类型名称" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOrderAvailableGoodsQty",
+    "name": "查询订单商品可申请售后数量",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/queryOrderAvailabeGoodsQty",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": true, "type": "string", "desc": "申请售后时以云中鹤子订单编号去申请" },
+      { "name": "goodsSkuCode", "label": "订单中购买的商品SKU编码", "required": true, "type": "string", "desc": "申请售后的原订单中购买的商品sku编码" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.orderCode", "docType": "String", "docDesc": "云中鹤子订单编号" },
+      { "name": "result.goodsSkuCode", "docType": "String", "docDesc": "商品sku编码" },
+      { "name": "result.applyQty", "docType": "Integer", "docDesc": "商品可申请售后的最大数量" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "createAfterSalesOrder",
+    "name": "提交售后订单",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/createAfterSalesOrder",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "orderCode", "label": "云中鹤子订单编号", "required": true, "type": "string", "desc": "申请售后时以云中鹤子订单编号去申请" },
+      { "name": "tparReturnOrderCode", "label": "客户方售后订单编号", "required": false, "type": "string", "desc": "建议传值以便后续用客户售后订单号操作" },
+      { "name": "returnType", "label": "申请售后类型", "required": true, "type": "enum", "options": ["1001", "1002", "1003"], "optionLabels": ["1001-退货退款(有货物寄回)", "1002-仅退款(无货物寄回)", "1003-退货换货"] },
+      { "name": "returnReasonType", "label": "申请售后的原因类型", "required": true, "type": "enum", "options": ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008", "1009", "1010", "1011", "1012", "1013", "1014", "1015", "1016"], "optionLabels": ["1001-商品无货", "1002-发货时间问题", "1003-不想要了/不喜欢", "1004-商品信息填写错误", "1005-地址信息填写错误", "1006-商品降价", "1007-其他", "1008-尺码不合适", "1009-无理由退货", "1010-发票问题", "1011-商品与页面描述不符", "1012-发错货", "1013-质量问题", "1014-买错尺码/颜色/型号", "1015-商品缺少或破损", "1016-买错了"] },
+      { "name": "returnContent", "label": "申请售后的内容描述", "required": true, "type": "string", "desc": "最多不超过256个字" },
+      { "name": "returnVoucherImg", "label": "售后图片凭证链接", "required": false, "type": "string", "desc": "多个以英文逗号隔开，最多支持5个图片凭证" },
+      { "name": "goodsSkuCode", "label": "订单中购买的商品SKU编码", "required": true, "type": "string", "desc": "申请售后的原订单中购买的商品sku编码" },
+      { "name": "applyQty", "label": "商品申请售后的数量", "required": true, "type": "number", "desc": "申请售后的商品数量" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.orderCode", "docType": "String", "docDesc": "云中鹤子订单编号" },
+      { "name": "result.returnOrderCode", "docType": "String", "docDesc": "云中鹤售后订单编号" },
+      { "name": "result.tparReturnOrderCode", "docType": "String", "docDesc": "客户方售后订单编号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "cancelAfterSalesOrder",
+    "name": "取消售后订单",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/cancelAfterSalesOrder",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "returnOrderCode", "label": "云中鹤售后订单编号", "required": false, "type": "string", "desc": "与tparReturnOrderCode不能同时为空，至少传一个" },
+      { "name": "tparReturnOrderCode", "label": "客户方售后订单编号", "required": false, "type": "string", "desc": "与returnOrderCode不能同时为空，至少传一个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.returnOrderCode", "docType": "String", "docDesc": "云中鹤售后订单编号" },
+      { "name": "result.tparReturnOrderCode", "docType": "String", "docDesc": "客户方售后订单编号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "sendBackGoods",
+    "name": "售后订单商品寄回",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/sendBackGoods",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "returnOrderCode", "label": "云中鹤售后订单编号", "required": false, "type": "string", "desc": "与tparReturnOrderCode不能同时为空，至少传一个" },
+      { "name": "tparReturnOrderCode", "label": "客户方售后订单编号", "required": false, "type": "string", "desc": "与returnOrderCode不能同时为空，至少传一个" },
+      { "name": "expressCode", "label": "快递公司编码", "required": true, "type": "string", "desc": "申请售后的商品寄回使用的快递公司编码" },
+      { "name": "expressName", "label": "快递公司名称", "required": true, "type": "string", "desc": "申请售后的商品寄回使用的快递公司名称" },
+      { "name": "expressNumber", "label": "快递编号", "required": true, "type": "string", "desc": "申请售后的商品寄回使用的快递编号" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.returnOrderCode", "docType": "String", "docDesc": "云中鹤售后订单编号" },
+      { "name": "result.tparReturnOrderCode", "docType": "String", "docDesc": "客户方售后订单编号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAfterSalesOrderList",
+    "name": "查询售后订单列表",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/queryAfterSalesOrderList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "pageNum", "label": "分页页码", "required": false, "type": "number", "default": 1, "desc": "不传默认为第1页" },
+      { "name": "pageSize", "label": "每页数据条数", "required": false, "type": "number", "default": 100, "desc": "不传默认为100条，最大不超过100" },
+      { "name": "returnOrderCode", "label": "云中鹤售后订单编号", "required": false, "type": "string" },
+      { "name": "tparReturnOrderCode", "label": "客户方售后订单编号", "required": false, "type": "string" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.pageNum", "docType": "Integer", "docDesc": "当前分页页码" },
+      { "name": "result.pageSize", "docType": "Integer", "docDesc": "当前分页每页数据条数" },
+      { "name": "result.totalCount", "docType": "Integer", "docDesc": "当前数据总条数" },
+      { "name": "result.totalPage", "docType": "Integer", "docDesc": "当前数据总页数" },
+      { "name": "result.afterSalesOrderList", "docType": "Array", "docDesc": "售后订单信息列表" },
+      { "name": "result.afterSalesOrderList[].parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.afterSalesOrderList[].orderCode", "docType": "String", "docDesc": "云中鹤子订单编号" },
+      { "name": "result.afterSalesOrderList[].returnOrderCode", "docType": "String", "docDesc": "云中鹤售后订单编号" },
+      { "name": "result.afterSalesOrderList[].tparReturnOrderCode", "docType": "String", "docDesc": "客户方售后订单编号" },
+      { "name": "result.afterSalesOrderList[].returnType", "docType": "Integer", "docDesc": "售后类型(1001:退货退款,1002:仅退款,1003:退货换货)" },
+      { "name": "result.afterSalesOrderList[].returnStatus", "docType": "Integer", "docDesc": "退换货状态(1000:待审核,1001:待收货,1002:已收货,1003:已退款,1004:已生成新订单,1005:已取消,1006:退款异常,1007:商品退回,1008:审核不通过,1009:已完成,1010:换货新订单待收货,1011:换货新订单已签收)" },
+      { "name": "result.afterSalesOrderList[].refundStatus", "docType": "Integer", "docDesc": "退款状态(1000:待审核,1001:待退款,1002:已退款,1003:已取消,1004:退款异常,1005:审核不通过,1006:已完成)" },
+      { "name": "result.afterSalesOrderList[].returnApplyTime", "docType": "Date", "docDesc": "售后申请时间" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAfterSalesOrderDetail",
+    "name": "查询售后订单详情",
+    "category": "售后订单服务",
+    "method": "POST",
+    "path": "/open/api/afterSalesOrder/queryAfterSalesOrderDetail",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken" },
+      { "name": "returnOrderCode", "label": "云中鹤售后订单编号", "required": false, "type": "string", "desc": "与tparReturnOrderCode不能同时为空，至少传一个" },
+      { "name": "tparReturnOrderCode", "label": "客户方售后订单编号", "required": false, "type": "string", "desc": "与returnOrderCode不能同时为空，至少传一个" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result.parentOrderCode", "docType": "String", "docDesc": "云中鹤父订单编号" },
+      { "name": "result.orderCode", "docType": "String", "docDesc": "云中鹤子订单编号" },
+      { "name": "result.returnOrderCode", "docType": "String", "docDesc": "云中鹤售后订单编号" },
+      { "name": "result.tparReturnOrderCode", "docType": "String", "docDesc": "客户方售后订单编号" },
+      { "name": "result.returnType", "docType": "Integer", "docDesc": "售后类型(1001:退货退款,1002:仅退款,1003:退货换货)" },
+      { "name": "result.returnStatus", "docType": "Integer", "docDesc": "退换货状态" },
+      { "name": "result.refundStatus", "docType": "Integer", "docDesc": "退款状态" },
+      { "name": "result.returnReasonType", "docType": "Integer", "docDesc": "售后原因类型" },
+      { "name": "result.returnContent", "docType": "String", "docDesc": "售后内容描述" },
+      { "name": "result.returnVoucherImg", "docType": "String", "docDesc": "售后图片凭证" },
+      { "name": "result.goodsSkuCode", "docType": "String", "docDesc": "商品sku编码" },
+      { "name": "result.applyQty", "docType": "Integer", "docDesc": "申请数量" },
+      { "name": "result.returnApplyTime", "docType": "Date", "docDesc": "售后申请时间" },
+      { "name": "result.newOrderCode", "docType": "String", "docDesc": "换货后新生成的订单编号" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  }
+]

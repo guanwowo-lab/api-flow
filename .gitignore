@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.mcp.json
+.claude
 
 # Editor directories and files
 .vscode/*
@@ -22,3 +25,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tencent Cloud EdgeOne
+.edgeone/*
+.tef_dist/*
+  

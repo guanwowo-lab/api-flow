@@ -1,0 +1,256 @@
+[
+  {
+    "id": "queryAddressProvince",
+    "name": "获取一级地址列表(省)",
+    "category": "地址基础数据",
+    "method": "POST",
+    "path": "/open/api/address/queryAddressProvince",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识，true或false表示接口调用成功与否" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的地址信息列表" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "地址编码(省)" },
+      { "name": "result[].addressName", "docType": "String", "docDesc": "地址名称(省)" },
+      { "name": "result[].parentAddressCode", "docType": "String", "docDesc": "上级地址编码(国家)" },
+      { "name": "result[].addressLevel", "docType": "Integer", "docDesc": "地址等级(1001:一级地址(省),1002:二级地址(市),1003:三级地址(区),1004:四级地址(乡镇/街道))" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAddressCity",
+    "name": "获取二级地址列表(市)",
+    "category": "地址基础数据",
+    "method": "POST",
+    "path": "/open/api/address/queryAddressCity",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" },
+      { "name": "parentAddressCode", "label": "上级地址编码(省编码)", "required": true, "type": "string", "docType": "String", "docDesc": "上级地址编码(省编码)，来自获取一级地址列表接口返回的addressCode", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识，true或false表示接口调用成功与否" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的地址信息列表" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "地址编码(市)" },
+      { "name": "result[].addressName", "docType": "String", "docDesc": "地址名称(市)" },
+      { "name": "result[].parentAddressCode", "docType": "String", "docDesc": "上级地址编码(省)" },
+      { "name": "result[].addressLevel", "docType": "Integer", "docDesc": "地址等级(1001:一级地址(省),1002:二级地址(市),1003:三级地址(区),1004:四级地址(乡镇/街道))" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAddressArea",
+    "name": "获取三级地址列表(区)",
+    "category": "地址基础数据",
+    "method": "POST",
+    "path": "/open/api/address/queryAddressArea",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" },
+      { "name": "parentAddressCode", "label": "上级地址编码(市编码)", "required": true, "type": "string", "docType": "String", "docDesc": "上级地址编码(市编码)，来自获取二级地址列表接口返回的addressCode", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的地址信息列表" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "地址编码(区)" },
+      { "name": "result[].addressName", "docType": "String", "docDesc": "地址名称(区)" },
+      { "name": "result[].parentAddressCode", "docType": "String", "docDesc": "上级地址编码(市)" },
+      { "name": "result[].addressLevel", "docType": "Integer", "docDesc": "地址等级(1001:省,1002:市,1003:区,1004:乡镇/街道)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAddressStreet",
+    "name": "获取四级地址列表(镇/街道)",
+    "category": "地址基础数据",
+    "method": "POST",
+    "path": "/open/api/address/queryAddressStreet",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" },
+      { "name": "parentAddressCode", "label": "上级地址编码(区编码)", "required": true, "type": "string", "docType": "String", "docDesc": "上级地址编码(区编码)，来自获取三级地址列表接口返回的addressCode", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的地址信息列表" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "地址编码(镇/街道)" },
+      { "name": "result[].addressName", "docType": "String", "docDesc": "地址名称(镇/街道)" },
+      { "name": "result[].parentAddressCode", "docType": "String", "docDesc": "上级地址编码(区)" },
+      { "name": "result[].addressLevel", "docType": "Integer", "docDesc": "地址等级(1001:省,1002:市,1003:区,1004:乡镇/街道)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryAddressList",
+    "name": "获取全部地址列表",
+    "category": "地址基础数据",
+    "method": "POST",
+    "path": "/open/api/address/queryAddressList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的全部地址信息列表" },
+      { "name": "result[].addressCode", "docType": "String", "docDesc": "地址编码" },
+      { "name": "result[].addressName", "docType": "String", "docDesc": "地址名称" },
+      { "name": "result[].parentAddressCode", "docType": "String", "docDesc": "上级地址编码" },
+      { "name": "result[].addressLevel", "docType": "Integer", "docDesc": "地址等级(1001:省,1002:市,1003:区,1004:乡镇/街道)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryOneCategoryList",
+    "name": "获取一级分类列表",
+    "category": "分类基础数据",
+    "method": "POST",
+    "path": "/open/api/category/queryOneCategoryList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码，00000表示成功，其他表示失败" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的分类信息列表" },
+      { "name": "result[].categoryCode", "docType": "String", "docDesc": "分类编码" },
+      { "name": "result[].categoryName", "docType": "String", "docDesc": "分类名称" },
+      { "name": "result[].parentCategoryCode", "docType": "String", "docDesc": "上级分类编码" },
+      { "name": "result[].categoryLevel", "docType": "Integer", "docDesc": "分类等级(1001:一级,1002:二级,1003:三级)" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "querySecondCategoryList",
+    "name": "获取二级分类列表",
+    "category": "分类基础数据",
+    "method": "POST",
+    "path": "/open/api/category/querySecondCategoryList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" },
+      { "name": "parentCategoryCode", "label": "上级分类编码", "required": true, "type": "string", "docType": "String", "docDesc": "上级分类编码，来自获取一级分类列表接口返回的categoryCode", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的分类信息列表" },
+      { "name": "result[].categoryCode", "docType": "String", "docDesc": "分类编码" },
+      { "name": "result[].categoryName", "docType": "String", "docDesc": "分类名称" },
+      { "name": "result[].parentCategoryCode", "docType": "String", "docDesc": "上级分类编码" },
+      { "name": "result[].categoryLevel", "docType": "Integer", "docDesc": "分类等级" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryThreeCategoryList",
+    "name": "获取三级分类列表",
+    "category": "分类基础数据",
+    "method": "POST",
+    "path": "/open/api/category/queryThreeCategoryList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" },
+      { "name": "parentCategoryCode", "label": "上级分类编码", "required": true, "type": "string", "docType": "String", "docDesc": "上级分类编码，来自获取二级分类列表接口返回的categoryCode", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的分类信息列表" },
+      { "name": "result[].categoryCode", "docType": "String", "docDesc": "分类编码" },
+      { "name": "result[].categoryName", "docType": "String", "docDesc": "分类名称" },
+      { "name": "result[].parentCategoryCode", "docType": "String", "docDesc": "上级分类编码" },
+      { "name": "result[].categoryLevel", "docType": "Integer", "docDesc": "分类等级" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryCategoryList",
+    "name": "获取全部分类列表",
+    "category": "分类基础数据",
+    "method": "POST",
+    "path": "/open/api/category/queryCategoryList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的全部分类信息列表" },
+      { "name": "result[].categoryCode", "docType": "String", "docDesc": "分类编码" },
+      { "name": "result[].categoryName", "docType": "String", "docDesc": "分类名称" },
+      { "name": "result[].parentCategoryCode", "docType": "String", "docDesc": "上级分类编码" },
+      { "name": "result[].categoryLevel", "docType": "Integer", "docDesc": "分类等级" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryBrandList",
+    "name": "获取品牌列表",
+    "category": "品牌基础数据",
+    "method": "POST",
+    "path": "/open/api/brand/queryBrandList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的品牌信息列表" },
+      { "name": "result[].brandCode", "docType": "String", "docDesc": "品牌编码" },
+      { "name": "result[].brandName", "docType": "String", "docDesc": "品牌名称" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  },
+  {
+    "id": "queryExpressList",
+    "name": "获取快递公司列表",
+    "category": "快递公司基础数据",
+    "method": "POST",
+    "path": "/open/api/express/queryExpressList",
+    "signRequired": false,
+    "params": [
+      { "name": "accessToken", "label": "接口授权访问令牌", "required": true, "type": "string", "autoFill": "accessToken", "docType": "String", "docDesc": "接口访问授权认证令牌，长度最大512个字符，accessToken有效期为24小时", "docNote": "必填" }
+    ],
+    "outputParams": [
+      { "name": "success", "docType": "Boolean", "docDesc": "接口成功与否标识" },
+      { "name": "code", "docType": "String", "docDesc": "接口业务编码" },
+      { "name": "desc", "docType": "String", "docDesc": "接口调用错误提示或成功提示" },
+      { "name": "result", "docType": "Array", "docDesc": "接口返回的快递公司信息列表" },
+      { "name": "result[].expressCode", "docType": "String", "docDesc": "快递公司编码" },
+      { "name": "result[].expressName", "docType": "String", "docDesc": "快递公司名称" },
+      { "name": "time", "docType": "Long", "docDesc": "接口返回数据的时间戳" }
+    ],
+    "responseMapping": { "successField": "success", "codeField": "code" }
+  }
+]

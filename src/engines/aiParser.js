@@ -5,7 +5,6 @@ const STORAGE_KEY_HINT = 'aiflow_ai_hint'
 
 export function getAiConfig() {
   let baseUrl = localStorage.getItem(STORAGE_KEY_BASE) || 'https://api.deepseek.com'
-  // 自动修正旧的错误 URL
   if (baseUrl.includes('/anthropic')) {
     baseUrl = 'https://api.deepseek.com'
     localStorage.setItem(STORAGE_KEY_BASE, baseUrl)
@@ -30,21 +29,51 @@ export function hasAiConfig() {
   return !!(c.apiKey && c.baseUrl)
 }
 
-/**
- * 使用 AI 从文档文本中提取 API 接口结构化信息
- * @param {string} text - 文档纯文本
- * @returns {Promise<Array<{name: string, url: string, method: string, inputParams: Array, outputParams: Array}>>}
- */
+const MAX_CHUNK = 28000
+
 export async function aiParseDocument(text) {
   const config = getAiConfig()
   if (!config.apiKey) throw new Error('请先配置 AI API Key')
 
-  // 限制文本长度，控制 token 消耗
-  const maxChars = 30000
-  const truncated = text.length > maxChars
-    ? text.slice(0, maxChars) + '\n\n[文档过长，已截断前 ' + maxChars + ' 字符]'
-    : text
+  if (text.length <= MAX_CHUNK) {
+    return await callAiParse(text, config)
+  }
 
+  const chunks = splitIntoChunks(text, MAX_CHUNK)
+  const allApis = []
+  for (let i = 0; i < chunks.length; i++) {
+    const apis = await callAiParse(`[第${i + 1}/${chunks.length}部分]\n\n${chunks[i]}`, config)
+    allApis.push(...apis)
+  }
+
+  const seen = new Set()
+  return allApis.filter((api) => {
+    const key = (api.name || '') + '|' + (api.url || '')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+function splitIntoChunks(text, maxSize) {
+  const paragraphs = text.split(/\n{2,}/)
+  const chunks = []
+  let current = ''
+
+  for (const para of paragraphs) {
+    if (current.length + para.length > maxSize && current.length > 0) {
+      chunks.push(current.trim())
+      current = para
+    } else {
+      current += (current ? '\n\n' : '') + para
+    }
+  }
+  if (current.trim()) chunks.push(current.trim())
+
+  return chunks
+}
+
+async function callAiParse(content, config) {
   const prompt = `你是一个 API 文档解析器。请从以下文档内容中提取所有 API 接口信息，返回 JSON 数组。
 
 每个接口对象格式：
@@ -68,7 +97,7 @@ export async function aiParseDocument(text) {
 5. 只返回 JSON 数组，不要任何解释文字
 ${config.hint ? `\n用户提示：${config.hint}\n` : ''}
 文档内容：
-${truncated}`
+${content}`
 
   const apiUrl = `${config.baseUrl}/v1/chat/completions`
 
@@ -109,14 +138,11 @@ ${truncated}`
   try { data = await response.json() } catch { throw new Error('AI 返回格式异常，无法解析 JSON 响应') }
   const reply = data?.choices?.[0]?.message?.content || ''
 
-  // 从 AI 回复中提取 JSON（支持 markdown 代码块、数组、单个对象）
   let jsonStr = reply
   const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (codeBlock) jsonStr = codeBlock[1]
 
-  // 尝试匹配 JSON 数组
   let arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
-  // 也尝试匹配单个对象（只有一个接口时 AI 可能返回对象而非数组）
   const objectMatch = jsonStr.match(/\{[\s\S]*\}/)
 
   let parsed
@@ -130,7 +156,6 @@ ${truncated}`
       throw new Error('未找到 JSON。返回内容: ' + reply.slice(0, 500))
     }
   } catch (e) {
-    // 尝试修复截断的 JSON
     const raw = arrayMatch?.[0] || objectMatch?.[0] || ''
     const repaired = raw ? repairTruncatedJson(raw) : null
     if (repaired) {
@@ -167,16 +192,14 @@ function normalizeParam(p) {
 }
 
 function repairTruncatedJson(str) {
-  // 补全因 max_tokens 截断导致的缺失括号和引号
   let s = str.trimEnd()
 
-  // 移除末尾不完整的属性（如 "name": "商）
+  // 移除末尾不完整的属性
   s = s.replace(/,\s*"[^"]*"\s*:\s*"[^"]*$/, '')
   s = s.replace(/,\s*"[^"]*"\s*:\s*[^\s,\]}]*$/, '')
   s = s.replace(/,\s*"[^"]*"\s*$/, '')
   s = s.replace(/,\s*"[^"]*$/, '')
 
-  // 统计未闭合的括号
   let braceCount = 0, bracketCount = 0, inString = false, escaped = false
   for (const ch of s) {
     if (escaped) { escaped = false; continue }
@@ -189,11 +212,8 @@ function repairTruncatedJson(str) {
     if (ch === ']') bracketCount--
   }
 
-  // 补全缺失的括号
   if (braceCount > 0 || bracketCount > 0) {
-    // 如果最后字符是字符串内，先闭合引号
     if (inString) s += '"'
-    // 补括号
     for (let i = 0; i < braceCount; i++) s += '}'
     for (let i = 0; i < bracketCount; i++) s += ']'
     return s

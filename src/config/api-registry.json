@@ -1,7 +1,9 @@
 {
   "modules": [
     { "key": "auth", "label": "认证服务", "file": "auth.json" },
+    { "key": "basic-data", "label": "基础数据服务", "file": "basic-data.json" },
     { "key": "product", "label": "商品服务", "file": "product.json" },
-    { "key": "order", "label": "订单服务", "file": "order.json" }
+    { "key": "order", "label": "订单服务", "file": "order.json" },
+    { "key": "aftersales", "label": "售后订单服务", "file": "aftersales.json" }
   ]
 }

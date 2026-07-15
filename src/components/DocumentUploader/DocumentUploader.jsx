@@ -14,7 +14,7 @@ export default function DocumentUploader() {
   const [mode, setMode] = useState('file')
   const [useAI, setUseAI] = useState(hasAiConfig())
   const [showSettings, setShowSettings] = useState(false)
-  const [aiConfig, setAiConfig] = useState(getAiConfig())
+  const [aiConfig, setAiConfig] = useState(() => ({ ...getAiConfig(), hint: '' }))
   const fileRef = useRef(null)
 
   useEffect(() => { loadApiFolders() }, [])
@@ -49,6 +49,7 @@ export default function DocumentUploader() {
 
       let apisB = []
       if (useAI) {
+        saveAiConfig(aiConfig)
         apisB = await aiParseDocument(docText)
       } else {
         apisB = extractApis(docText)
@@ -60,7 +61,7 @@ export default function DocumentUploader() {
         return
       }
 
-      await saveExtract(state.project.id, state.folder?.id, 'B', apisB)
+      await saveExtract(state.folder?.id, 'B', apisB)
       dispatch({ type: 'SET_VIEW', payload: 'extract' })
     } catch (e) {
       setError(e.message)
@@ -76,7 +77,7 @@ export default function DocumentUploader() {
           onClick={() => dispatch({ type: 'SET_VIEW', payload: 'projectFolders' })}
           className="text-gray-500 hover:text-gray-700"
         >
-          &larr; 项目列表
+          &larr; 对接文件夹
         </button>
         <h1 className="text-xl font-bold">上传客户文档 — {state.project?.name}</h1>
         <button

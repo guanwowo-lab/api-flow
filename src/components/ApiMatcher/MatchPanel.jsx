@@ -11,15 +11,43 @@ export default function MatchPanel() {
   const apisA = folders.flatMap((f) => (f.apis || []).map((a) => ({ ...a })))
   const apiKey = (api) => (api?.name || '') + '|||' + (api?.url || '')
   const apiKeyMap = Object.fromEntries(apisA.map((a, i) => [apiKey(a), i]))
+  const clientApiKey = (api) => (api?.name || '') + '|||' + (api?.url || '')
+  const clientApiMap = Object.fromEntries(apisB.map((a) => [clientApiKey(a), a]))
 
-  const [mappings, setMappings] = useState(() => {
-    if (state.matches?.mappings) return state.matches.mappings
-    return {}
-  })
+  const [mappings, setMappings] = useState({})
+  const mappingsRef = useRef(mappings)
+  mappingsRef.current = mappings
   const [expandedClient, setExpandedClient] = useState(null)
 
-  const getMapping = (clientIdx, paramKey, paramType) => {
-    return (mappings[clientIdx] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
+  // 去重：同一 clientParam+paramType 只保留最后一条
+  const dedupMappings = (list) => {
+    const map = new Map()
+    for (const m of list) {
+      map.set(m.clientParam + '||' + m.paramType, m)
+    }
+    return [...map.values()]
+  }
+
+  // 当 matches 数据加载完成时同步到本地 state
+  useEffect(() => {
+    if (state.folder?.id && state.matches) {
+      const raw = state.matches
+      const loaded = {}
+      for (const [ck, list] of Object.entries(raw)) {
+        loaded[ck] = dedupMappings(list || [])
+        if (loaded[ck].length !== (list || []).length) {
+          console.log('[sync] deduped clientKey', ck, 'from', (list || []).length, 'to', loaded[ck].length)
+        }
+      }
+      console.log('[sync] loading mappings, clientApiKeys:', Object.keys(loaded).length)
+      setMappings(loaded)
+      mappingsRef.current = loaded
+      setDirtyClients(new Set())
+    }
+  }, [state.folder?.id, state.matches])
+
+  const getMapping = (clientKey, paramKey, paramType) => {
+    return (mappings[clientKey] || []).find((m) => m.clientParam === paramKey && m.paramType === paramType)
   }
 
   const [dirtyClients, setDirtyClients] = useState(new Set())
@@ -27,77 +55,60 @@ export default function MatchPanel() {
 
   useEffect(() => { loadApiFolders() }, [])
 
-  // 一次性修复：为已有映射补充 ourApiKey（用当前索引对应API生成key）
-  const fixedRef = useRef(false)
-  useEffect(() => {
-    if (fixedRef.current || apisA.length === 0) return
-    let changed = false
-    const updated = { ...mappings }
-    for (const ck of Object.keys(updated)) {
-      const list = updated[ck] || []
-      const newList = list.map((m) => {
-        if (!m.ourApiKey && m.ourApiIdx >= 0 && apisA[m.ourApiIdx]) {
-          changed = true
-          return { ...m, ourApiKey: apiKey(apisA[m.ourApiIdx]) }
-        }
-        return m
-      })
-      if (changed) updated[ck] = newList
-    }
-    if (changed) {
-      setMappings(updated)
-      saveMatches(state.project.id, state.folder?.id, { mappings: updated })
-    }
-    fixedRef.current = true
-  }, [apisA.length])
-
-  const setMapping = (clientIdx, paramKey, paramType, ourApiIdx, ourParam, status) => {
+  const setMapping = (clientKey, paramKey, paramType, ourApiIdx, ourParam, status) => {
     const ourApi = apisA[ourApiIdx]
     const ourApiKey = ourApi ? apiKey(ourApi) : ''
     setMappings((prev) => {
-      const prevList = prev[clientIdx] || []
+      const prevList = prev[clientKey] || []
       const existing = prevList.find((m) => m.clientParam === paramKey && m.paramType === paramType)
       const list = prevList.filter((m) => !(m.clientParam === paramKey && m.paramType === paramType))
       if (status !== 'unset') {
         list.push({ clientParam: paramKey, paramType, ourApiIdx, ourApiKey, ourParam, status, remark: existing?.remark || '' })
       }
-      return { ...prev, [clientIdx]: list }
+      return { ...prev, [clientKey]: list }
     })
-    setDirtyClients((prev) => new Set(prev).add(clientIdx))
+    setDirtyClients((prev) => new Set(prev).add(clientKey))
   }
 
-  const clearMappings = (clientIdx) => {
+  const clearMappings = (clientKey) => {
     setMappings((prev) => {
       const updated = { ...prev }
-      delete updated[clientIdx]
+      delete updated[clientKey]
       return updated
     })
-    setDirtyClients((prev) => new Set(prev).add(clientIdx))
+    setDirtyClients((prev) => new Set(prev).add(clientKey))
   }
 
-  const saveMapping = async (clientIdx) => {
+  const saveMapping = async (clientKey) => {
     const cache = remarkCache.current
-    let toSave
-    setMappings((prev) => {
-      const list = (prev[clientIdx] || []).map((m) => {
-        const key = `${clientIdx}:${m.clientParam}:${m.paramType}`
-        if (cache[key] !== undefined) return { ...m, remark: cache[key] }
-        return m
-      })
-      const updated = { ...prev, [clientIdx]: list }
-      toSave = updated
-      return updated
+    const currentMappings = mappingsRef.current
+    const rawList = (currentMappings[clientKey] || []).map((m) => {
+      const cacheKey = `${clientKey}:${m.clientParam}:${m.paramType}`
+      if (cache[cacheKey] !== undefined) return { ...m, remark: cache[cacheKey] }
+      return m
     })
-    if (toSave) await saveMatches(state.project.id, state.folder?.id, { mappings: toSave })
+    const list = dedupMappings(rawList)
+    setMappings((prev) => ({ ...prev, [clientKey]: list }))
+
+    console.log('[saveMapping] clientKey:', clientKey, 'list length:', list.length)
+
+    try {
+      await saveMatches(state.folder?.id, clientKey, list)
+      console.log('[saveMapping] saveMatches succeeded')
+    } catch (e) {
+      console.error('[saveMapping] saveMatches failed:', e)
+      alert('保存失败: ' + (e.message || '未知错误'))
+      return
+    }
     setDirtyClients((prev) => {
       const next = new Set(prev)
-      next.delete(clientIdx)
+      next.delete(clientKey)
       return next
     })
   }
 
-  const validKeys = (clientIdx) => {
-    const api = apisB[clientIdx]
+  const validKeys = (clientKey) => {
+    const api = clientApiMap[clientKey]
     if (!api) return new Set()
     return new Set([
       ...flattenParams(api.inputParams || []).map((p) => p._key),
@@ -105,20 +116,23 @@ export default function MatchPanel() {
     ])
   }
 
-  const getMatchStats = (clientIdx) => {
-    const list = (mappings[clientIdx] || []).filter((m) => validKeys(clientIdx).has(m.clientParam))
-    const api = apisB[clientIdx]
+  const getMatchStats = (clientKey) => {
+    const api = clientApiMap[clientKey]
     const flatIn = flattenParams(api?.inputParams || [])
     const flatOut = flattenParams(api?.outputParams || [])
     const total = flatIn.length + flatOut.length
-    const matched = list.filter((m) => m.status === 'matched' && m.ourParam).length
+    const keys = validKeys(clientKey)
+    const list = dedupMappings((mappings[clientKey] || []).filter((m) => keys.has(m.clientParam)))
+    const matched = list.filter((m) => m.status === 'matched').length
     const missing = list.filter((m) => m.status === 'missing').length
     return { total, matched, missing, unmapped: total - matched - missing }
   }
 
-  const totalMatched = apisB.reduce((sum, _, i) => {
-    const valid = validKeys(i)
-    return sum + (mappings[i] || []).filter((m) => m.status === 'matched' && m.ourParam && valid.has(m.clientParam)).length
+  const totalMatched = apisB.reduce((sum, api) => {
+    const ck = clientApiKey(api)
+    const valid = validKeys(ck)
+    const deduped = dedupMappings((mappings[ck] || []).filter((m) => valid.has(m.clientParam)))
+    return sum + deduped.filter((m) => m.status === 'matched').length
   }, 0)
   const totalParams = apisB.reduce((sum, api) => {
     return sum + flattenParams(api.inputParams || []).length + flattenParams(api.outputParams || []).length
@@ -131,6 +145,7 @@ export default function MatchPanel() {
   const [aiMatchOpen, setAiMatchOpen] = useState(false)
   const [aiMatchLoading, setAiMatchLoading] = useState(false)
   const [aiMatchError, setAiMatchError] = useState('')
+  const [aiMatchHint, setAiMatchHint] = useState('')
 
   const handleAiMatch = async () => {
     setAiMatchLoading(true)
@@ -142,8 +157,8 @@ export default function MatchPanel() {
         inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
         outputParams: flattenParams(a.outputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, desc: p.description })),
       }))
-      const clientApis = apisB.map((a, i) => ({
-        idx: i, name: a.name, url: a.url, method: a.method,
+      const clientApis = apisB.map((a) => ({
+        key: clientApiKey(a), name: a.name, url: a.url, method: a.method,
         inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
         outputParams: flattenParams(a.outputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, desc: p.description })),
       }))
@@ -159,7 +174,7 @@ ${JSON.stringify(clientApis, null, 2)}
 
 请为每个客户API的每个参数寻找最佳匹配。返回JSON数组（只返回JSON，不要解释）：
 [{
-  "clientIdx": 客户API的idx,
+  "clientKey": "客户API的key",
   "paramKey": "参数的key",
   "paramType": "input或output",
   "ourApiIdx": 我方API的idx（找不到填-1）,
@@ -173,7 +188,8 @@ ${JSON.stringify(clientApis, null, 2)}
 2. 能匹配到的status填"matched"，找不到的填"missing"
 3. ourApiIdx用我方API的idx值
 4. 为我方参数列表中确实存在的字段
-5. 完整覆盖每个客户参数，不要遗漏`
+5. 完整覆盖每个客户参数，不要遗漏
+${aiMatchHint ? `\n补充要求：\n${aiMatchHint}` : ''}`
 
       const resp = await fetch(`${config.baseUrl}/v1/chat/completions`, {
         method: 'POST',
@@ -195,16 +211,21 @@ ${JSON.stringify(clientApis, null, 2)}
       setMappings((prev) => {
         const merged = { ...prev }
         for (const s of suggestions) {
+          const ck = s.clientKey || `${s.clientIdx}` // 兼容 AI 返回旧格式
           const validIdx = Number.isInteger(s.ourApiIdx) && s.ourApiIdx >= 0 && s.ourApiIdx < apisA.length ? s.ourApiIdx : -1
           const ourA = validIdx >= 0 ? apisA[validIdx] : null
-          const list = (merged[s.clientIdx] || []).filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
+          const list = (merged[ck] || []).filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
           list.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: validIdx, ourApiKey: ourA ? apiKey(ourA) : '', ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
-          merged[s.clientIdx] = list
+          merged[ck] = list
         }
         toSave = merged
         return merged
       })
-      if (toSave) await saveMatches(state.project.id, state.folder?.id, { mappings: toSave })
+      if (toSave) {
+        for (const [ck, list] of Object.entries(toSave)) {
+          await saveMatches(state.folder?.id, ck, list)
+        }
+      }
       setAiMatchOpen(false)
     } catch (e) {
       setAiMatchError(e.message)
@@ -216,9 +237,9 @@ ${JSON.stringify(clientApis, null, 2)}
   const handleExport = () => {
     const rows = [['客户接口名称', '字段名称', '类型', '必传', '字段描述', '映射到我方接口', '映射到字段', '状态', '备注']]
 
-    for (let ci = 0; ci < apisB.length; ci++) {
-      const api = apisB[ci]
-      const list = mappings[ci] || []
+    for (const api of apisB) {
+      const ck = clientApiKey(api)
+      const list = mappings[ck] || []
       const flatIn = flattenParams(api.inputParams || []).map((p) => ({ ...p, paramType: 'input' }))
       const flatOut = flattenParams(api.outputParams || []).map((p) => ({ ...p, paramType: 'output' }))
       const allParams = [...flatIn, ...flatOut]
@@ -246,11 +267,16 @@ ${JSON.stringify(clientApis, null, 2)}
       }
     }
 
-    const html = `<html><head><meta charset="UTF-8"></head><body><table border="1">${rows.map((r) => '<tr>' + r.map((c) => `<td>${c}</td>`).join('') + '</tr>').join('')}</table></body></html>`
-    const blob = new Blob([html], { type: 'application/vnd.ms-excel' })
+    // 生成 UTF-8 BOM CSV（Excel 可直接打开，无乱码）
+    const csvRows = rows.map((r) => r.map((c) => {
+      const v = String(c ?? '')
+      return v.includes(',') || v.includes('"') || v.includes('\n') ? `"${v.replace(/"/g, '""')}"` : v
+    }).join(','))
+    const csv = '﻿' + csvRows.join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url; a.download = `${state.project?.name || '匹配结果'}_${state.folder?.name || ''}.xls`
+    a.href = url; a.download = `${state.project?.name || '匹配结果'}_${state.folder?.name || ''}.csv`
     a.click(); URL.revokeObjectURL(url)
   }
 
@@ -285,6 +311,12 @@ ${JSON.stringify(clientApis, null, 2)}
           <p className="text-gray-500 mb-2">
             AI 会自动分析双方接口参数，将我方API的接口和字段映射到客户API。完成后可在下方查看和调整。
           </p>
+          <textarea
+            value={aiMatchHint}
+            onChange={(e) => setAiMatchHint(e.target.value)}
+            className="w-full h-16 px-3 py-2 border border-purple-200 rounded outline-none resize-none text-xs mb-2"
+            placeholder="补充提示词（可选），例如：优先匹配字段名完全一致的参数、忽略测试类参数..."
+          />
           {aiMatchError && <p className="text-red-500 mb-2">{aiMatchError}</p>}
           <button
             onClick={handleAiMatch}
@@ -300,17 +332,18 @@ ${JSON.stringify(clientApis, null, 2)}
         {/* 左侧：客户 API 列表 */}
         <div className="flex-[7] bg-white rounded-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto">
           <h2 className="font-medium mb-3 text-green-600">客户 API ({apisB.length})</h2>
-          {apisB.map((api, i) => {
-            const isOpen = expandedClient === i
-            const stats = getMatchStats(i)
+          {apisB.map((api) => {
+            const ck = clientApiKey(api)
+            const isOpen = expandedClient === ck
+            const stats = getMatchStats(ck)
             return (
-              <div key={i} className="mb-1">
+              <div key={ck} className="mb-1">
                 <button
-                  onClick={() => setExpandedClient(isOpen ? null : i)}
+                  onClick={() => setExpandedClient(isOpen ? null : ck)}
                   className={`w-full text-left text-sm py-1.5 px-2 rounded hover:bg-green-50 ${isOpen ? 'bg-green-50 font-medium' : ''}`}
                 >
                   <span className="font-mono text-xs bg-gray-100 px-1 rounded mr-1">{api.method}</span>
-                  {api.name || api.url || `接口 #${i + 1}`}
+                  {api.name || api.url || `接口 (${ck})` }
                   <span className="text-xs ml-2">
                     {stats.total > 0 && (
                       stats.matched === stats.total ? (
@@ -326,19 +359,19 @@ ${JSON.stringify(clientApis, null, 2)}
                   <>
                     <div className="ml-2 mt-1 mb-1 flex items-center gap-3">
                       <button
-                        onClick={() => { if (confirm('确定清除该接口的所有匹配记录？')) clearMappings(i) }}
+                        onClick={() => { if (confirm('确定清除该接口的所有匹配记录？')) clearMappings(ck) }}
                         className="text-xs text-red-400 hover:text-red-600"
                       >
                         清除该接口匹配
                       </button>
                       <button
-                        onClick={() => saveMapping(i)}
-                        className={`text-xs px-2 py-0.5 rounded ${dirtyClients.has(i) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
+                        onClick={() => saveMapping(ck)}
+                        className={`text-xs px-2 py-0.5 rounded ${dirtyClients.has(ck) ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}
                       >
-                        {dirtyClients.has(i) ? '● 保存匹配' : '已保存 ✓'}
+                        {dirtyClients.has(ck) ? '● 保存匹配' : '已保存 ✓'}
                       </button>
                       <BulkMapApi
-                        clientIdx={i}
+                        clientKey={ck}
                         apisA={apisA}
                         inputParams={api.inputParams || []}
                         outputParams={api.outputParams || []}
@@ -348,7 +381,7 @@ ${JSON.stringify(clientApis, null, 2)}
                           const allP = [...flatIn.map(p => ({...p, paramType: 'input'})), ...flatOut.map(p => ({...p, paramType: 'output'}))]
                           const ourKey = apiKey(apisA[apiIdx])
                           setMappings(prev => {
-                            const existing = prev[i] || []
+                            const existing = prev[ck] || []
                             const updated = existing.map(m => {
                               if (allP.some(p => p._key === m.clientParam && p.paramType === m.paramType))
                                 return { ...m, ourApiIdx: apiIdx, ourApiKey: ourKey, ourParam: '', remark: m.remark || '' }
@@ -356,21 +389,21 @@ ${JSON.stringify(clientApis, null, 2)}
                             })
                             const missing = allP.filter(p => !existing.some(m => m.clientParam === p._key && m.paramType === p.paramType))
                             const added = missing.map(p => ({ clientParam: p._key, paramType: p.paramType, ourApiIdx: apiIdx, ourApiKey: ourKey, ourParam: '', status: 'unset' }))
-                            return { ...prev, [i]: [...updated, ...added] }
+                            return { ...prev, [ck]: [...updated, ...added] }
                           })
-                          setDirtyClients(prev => new Set(prev).add(i))
+                          setDirtyClients(prev => new Set(prev).add(ck))
                         }}
                       />
                     </div>
                     <ClientParamMapping
                       clientApi={api}
-                      clientIdx={i}
+                      clientKey={ck}
                       apisA={apisA}
                       apiKeyMap={apiKeyMap}
-                      getMapping={(key, type) => getMapping(i, key, type)}
-                      setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(i, key, type, ourApiIdx, ourParam, status)}
+                      getMapping={(key, type) => getMapping(ck, key, type)}
+                      setMapping={(key, type, ourApiIdx, ourParam, status) => setMapping(ck, key, type, ourApiIdx, ourParam, status)}
                       remarkCache={remarkCache}
-                      onRemarkDirty={() => setDirtyClients((prev) => new Set(prev).add(i))}
+                      onRemarkDirty={() => setDirtyClients((prev) => new Set(prev).add(ck))}
                     />
                   </>
                 )}
@@ -456,7 +489,7 @@ function flattenParams(params, depth = 0, parentKey = '') {
   return result
 }
 
-function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping, setMapping, remarkCache, onRemarkDirty }) {
+function ClientParamMapping({ clientApi, clientKey, apisA, apiKeyMap, getMapping, setMapping, remarkCache, onRemarkDirty }) {
   const inputParams = clientApi.inputParams || []
   const outputParams = clientApi.outputParams || []
   const flatInput = flattenParams(inputParams)
@@ -474,10 +507,11 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
           <th className="text-left py-1 pr-2" style={{ width: '55px' }}>类型</th>
           {paramType === 'input' && <th className="text-center py-1 pr-2" style={{ width: '36px' }}>必传</th>}
           <th className="text-left py-1 pr-2" style={{ minWidth: '100px' }}>字段描述</th>
+          <th className="text-left py-1 pr-2" style={{ minWidth: '80px' }}>参数备注</th>
           <th className="text-left py-1 pr-2" style={{ width: '150px' }}>映射到我方接口</th>
           <th className="text-left py-1 pr-2" style={{ width: '130px' }}>映射到字段</th>
           <th className="text-left py-1" style={{ width: '44px' }}>状态</th>
-          <th className="text-left py-1 px-1" style={{ width: '300px' }}>备注</th>
+          <th className="text-left py-1 px-1" style={{ width: '300px' }}>匹配备注</th>
         </tr>
       </thead>
       <tbody>
@@ -505,6 +539,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
                 </td>
               )}
               <td className="py-1 pr-2 text-gray-500 align-top break-words" style={{ maxWidth: '150px' }}>{pb.description || '—'}</td>
+              <td className="py-1 pr-2 text-gray-500 align-top break-words" style={{ maxWidth: '120px' }}>{pb.remark || '—'}</td>
               <td className="py-1 pr-2 align-top">
                 <select
                   value={selectedApiIdx}
@@ -527,7 +562,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
               <td className="py-1 pr-2 align-top">
                 <input
                   type="text"
-                  list={`fields-${clientIdx}-${paramType}-${pb.name}`}
+                  list={`fields-${clientKey}-${paramType}-${pb.name}`}
                   value={m?.ourParam === '__skip' ? '不匹配（跳过）' : (m?.ourParam || '')}
                   onChange={(e) => {
                     const val = e.target.value
@@ -546,7 +581,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
                   placeholder="搜索字段..."
                   className="w-full px-1 py-0.5 border border-gray-200 rounded text-xs outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-100 disabled:text-gray-300"
                 />
-                <datalist id={`fields-${clientIdx}-${paramType}-${pb.name}`}>
+                <datalist id={`fields-${clientKey}-${paramType}-${pb.name}`}>
                   {fields.map((f) => (
                     <option key={f.name} value={((f._depth || 0) > 0 ? '└ '.repeat(f._depth) : '') + f.name + ' (' + f.type + ')'} />
                   ))}
@@ -564,7 +599,7 @@ function ClientParamMapping({ clientApi, clientIdx, apisA, apiKeyMap, getMapping
               </td>
               <td className="py-1 px-1 align-top">
                 <RemarkInput
-                  cacheKey={`${clientIdx}:${pb._key}:${paramType}`}
+                  cacheKey={`${clientKey}:${pb._key}:${paramType}`}
                   initialValue={m?.remark || ''}
                   onCache={(key, val) => {
                     remarkCache.current[key] = val
@@ -615,7 +650,7 @@ function RemarkInput({ cacheKey, initialValue, onCache }) {
   )
 }
 
-function BulkMapApi({ clientIdx, apisA, onBulkMap }) {
+function BulkMapApi({ clientKey, apisA, onBulkMap }) {
   const [selectedApi, setSelectedApi] = useState(-1)
 
   const handleBulkMap = () => {
