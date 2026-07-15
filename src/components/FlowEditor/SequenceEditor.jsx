@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
+import { useCallback, useState, useEffect, useRef, useMemo, memo } from 'react'
 import ReactFlow, {
   Controls, Background, MiniMap,
   addEdge, useNodesState, useEdgesState,
@@ -12,14 +12,35 @@ import ApiNode from './nodes/ApiNode'
 import SwimlaneNode from './nodes/SwimlaneNode'
 import ShapeNode from './nodes/ShapeNode'
 
-const nodeTypes = { apiNode: ApiNode, swimlane: SwimlaneNode, shapeNode: ShapeNode }
+// Memoize node types to prevent ReactFlow from re-rendering every node on parent renders
+const MemoApiNode = memo(ApiNode)
+const MemoSwimlaneNode = memo(SwimlaneNode)
+const MemoShapeNode = memo(ShapeNode)
+const nodeTypes = { apiNode: MemoApiNode, swimlane: MemoSwimlaneNode, shapeNode: MemoShapeNode }
 const defaultActors = [
   { id: 'user', name: '用户', color: '#8b5cf6', width: 240 },
   { id: 'client', name: '客户系统', color: '#22c55e', width: 240 },
   { id: 'our', name: '我方系统', color: '#3b82f6', width: 240 },
 ]
 
+// ── Render bomb detector ──
+let _globalRenderCount = 0
+let _globalRenderWindowStart = Date.now()
+const RENDER_BOMB_THRESHOLD = 200  // 200 renders in 5s = likely infinite loop
+
 export default function SequenceEditor() {
+  // ── Render bomb detector: logs if component re-renders excessively ──
+  _globalRenderCount++
+  const now = Date.now()
+  if (now - _globalRenderWindowStart > 5000) {
+    // Reset window every 5s
+    if (_globalRenderCount > RENDER_BOMB_THRESHOLD) {
+      console.warn(`[SequenceEditor] ⚠️ Render bomb detected: ${_globalRenderCount} renders in 5s`)
+    }
+    _globalRenderWindowStart = now
+    _globalRenderCount = 1
+  }
+
   const { state, saveDiagram, dispatch } = useProject()
   const folders = Array.isArray(state.apiFolders) ? state.apiFolders : []
   const apisA = folders.flatMap((f) => (Array.isArray(f.apis) ? f.apis : []).map((a) => ({ ...a })))
@@ -80,6 +101,8 @@ export default function SequenceEditor() {
   const nodesRef = useRef(nodes)
   nodesRef.current = nodes
   const isDraggingRef = useRef(false)
+  const fitViewDone = useRef(false)
+  const userChangeRef = useRef(false)  // gate history recording to user-initiated changes only
   const [historyTick, setHistoryTick] = useState(0)
 
   const viewportCenter = () => {
@@ -123,7 +146,7 @@ export default function SequenceEditor() {
         const actorIdx = actors.findIndex((a) => a.id === side)
         setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x: pos.x - 15, y: pos.y - 15 }, width: 30, height: 30, data: { label, side: apiSide, method, url, actorId: side, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
       }
-      setSaved(false)
+      markChanged()
     } catch (err) {
       console.error('Drop failed:', err)
     }
@@ -143,7 +166,7 @@ export default function SequenceEditor() {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return
       e.preventDefault()
       setNodes((nds) => nds.map((n) => n.selected ? { ...n, position: { x: n.position.x + (e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0), y: n.position.y + (e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0) } } : n))
-      setSaved(false)
+      markChanged()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
@@ -198,6 +221,9 @@ export default function SequenceEditor() {
   const [saved, setSaved] = useState(true)
   const justLoaded = useRef(true)
 
+  // Mark unsaved AND flag as user-initiated change for history recording
+  const markChanged = () => { setSaved(false); userChangeRef.current = true }
+
   const handleSave = async () => {
     try {
       const stripNodeData = (ns) => ns.map((n) => {
@@ -231,7 +257,7 @@ export default function SequenceEditor() {
       const h = n.style?.height || n.height || 50
       return { ...n, position: { ...n.position, y: avgY - h / 2 } }
     }))
-    setSaved(false)
+    markChanged()
   }
 
   const alignVertical = () => {
@@ -242,7 +268,7 @@ export default function SequenceEditor() {
       const w = n.style?.width || n.width || 140
       return { ...n, position: { ...n.position, x: avgX - w / 2 } }
     }))
-    setSaved(false)
+    markChanged()
   }
 
   const hasSelection = selectedNodes.length >= 2
@@ -250,18 +276,18 @@ export default function SequenceEditor() {
   // 仅在 actors 或泳道高度变更时标记未保存（nodes/edges 由 handleNodesChange/handleEdgesChange 处理）
   useEffect(() => {
     if (justLoaded.current) { justLoaded.current = false; return }
-    setSaved(false)
+    markChanged()
   }, [actors, swimlaneHeight])
 
   // 包装 onNodesChange：跳过 ReactFlow 内部的 dimensions 测量，只在用户操作时标记未保存
   const handleNodesChange = useCallback((changes) => {
     const hasUserChange = changes.some((c) => c.type !== 'dimensions')
-    if (hasUserChange) setSaved(false)
+    if (hasUserChange) markChanged()
     onNodesChange(changes)
   }, [onNodesChange])
 
   const handleEdgesChange = useCallback((changes) => {
-    if (changes.length > 0) setSaved(false)
+    if (changes.length > 0) markChanged()
     onEdgesChange(changes)
   }, [onEdgesChange])
 
@@ -351,16 +377,16 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
             data: { ...n.data, setNodes, connectMode: false },
           }))
           setNodes((nds) => nds.map((n) => ({ ...n, selected: false })).concat(newNodes))
-          setSaved(false)
+          markChanged()
         }
       }
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [setNodes])
-  // 撤销历史：存为 state，最多50步。拖拽过程中跳过。
-  // 用 rAF 合并同一帧内的多次变更（如 ReactFlow 逐节点测量 dimensions），
-  // 避免初始化时 N 个节点触发 N 次全量深拷贝导致页面崩溃。
+  // 撤销历史：存为 state，最多50步。
+  // 仅在用户触发变更时才记录快照，跳过 ReactFlow 内部的 dimensions 测量。
+  // 用 rAF 合并同一帧内的多次变更（如拖放节点）。
   const [history, setHistory] = useState([])
   const [historyIdx, setHistoryIdx] = useState(-1)
   const applyingUndo = useRef(false)
@@ -373,6 +399,9 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
   useEffect(() => {
     if (applyingUndo.current) { applyingUndo.current = false; return }
     if (isDraggingRef.current) return
+    // Only record history for user-initiated changes, not ReactFlow's internal dimension updates
+    if (!userChangeRef.current) return
+    userChangeRef.current = false
     const nodesSnapshot = nodesRefForHistory.current
     const edgesSnapshot = edgesRefForHistory.current
     if (historyRafRef.current) cancelAnimationFrame(historyRafRef.current)
@@ -401,7 +430,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     applyingUndo.current = true
     setNodes(history[newIdx].nodes.map((n) => ({ ...n })))
     setEdges(history[newIdx].edges.map((e) => ({ ...e })))
-    setSaved(false)
+    markChanged()
   }
 
   const redo = () => {
@@ -411,7 +440,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     applyingUndo.current = true
     setNodes(history[newIdx].nodes.map((n) => ({ ...n })))
     setEdges(history[newIdx].edges.map((e) => ({ ...e })))
-    setSaved(false)
+    markChanged()
   }
   const [actorEditOpen, setActorEditOpen] = useState(false)
   const [newActorName, setNewActorName] = useState('')
@@ -431,12 +460,12 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
   }
 
   const onConnect = useCallback(
-    (params) => { setEdges((eds) => dedupEdges(addEdge({ ...params, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#3b82f6', strokeWidth: 2 } }, eds))); setSaved(false) },
+    (params) => { setEdges((eds) => dedupEdges(addEdge({ ...params, type: 'smoothstep', animated: true, markerEnd: { type: MarkerType.ArrowClosed }, style: { stroke: '#3b82f6', strokeWidth: 2 } }, eds))); markChanged() },
     [setEdges]
   )
 
   const onReconnect = useCallback(
-    (oldEdge, newConnection) => { if (!oldEdge?.id) return; setEdges((eds) => eds.map((e) => e.id === oldEdge.id ? { ...e, ...newConnection, type: 'smoothstep', animated: true, markerEnd: e.markerEnd || { type: MarkerType.ArrowClosed }, style: { stroke: '#3b82f6', strokeWidth: 2, ...(e.style || {}) } } : e)); setSaved(false) },
+    (oldEdge, newConnection) => { if (!oldEdge?.id) return; setEdges((eds) => eds.map((e) => e.id === oldEdge.id ? { ...e, ...newConnection, type: 'smoothstep', animated: true, markerEnd: e.markerEnd || { type: MarkerType.ArrowClosed }, style: { stroke: '#3b82f6', strokeWidth: 2, ...(e.style || {}) } } : e)); markChanged() },
     [setEdges]
   )
 
@@ -447,7 +476,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     const x = actorIdx >= 0 ? actorX(actorIdx) + 40 : center.x
     const y = actorIdx >= 0 ? 80 + index * 110 : center.y + index * 40
     setNodes((nds) => [...nds, { id: `api-${Date.now()}`, type: 'apiNode', position: { x, y }, width: 30, height: 30, data: { label, side, method: api.method, url: api.url, actorId, actorName: actors[actorIdx]?.name || '', collapsed: true } }])
-    setSaved(false)
+    markChanged()
   }
 
   const addShapeNode = (shape, defaultLabel) => {
@@ -455,7 +484,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     const s = sizes[shape] || { w: 140, h: 50 }
     const center = viewportCenter()
     setNodes((nds) => [...nds, { id: `shape-${Date.now()}`, type: 'shapeNode', position: { x: center.x - s.w / 2 + (Math.random() - 0.5) * 100, y: center.y - s.h / 2 + (Math.random() - 0.5) * 60 }, style: { width: s.w, height: s.h }, data: { label: defaultLabel, shape, setNodes } }])
-    setSaved(false)
+    markChanged()
   }
 
   const addStartEndNode = (type) => {
@@ -463,7 +492,7 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
     const isStart = type === 'start'
     const h = isStart ? 60 : 50
     setNodes((nds) => [...nds, { id: `${type}-${Date.now()}`, type: 'shapeNode', position: { x: center.x - 70, y: center.y + (isStart ? -100 : 80) }, style: { width: 140, height: h }, data: { label: isStart ? '开始' : '结束', shape: isStart ? 'ellipse' : 'end' } }])
-    setSaved(false)
+    markChanged()
   }
 
   // 根据节点间方位自动分配 handle，让连线分布在不同连接点
@@ -565,14 +594,13 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
         }))
         setEdges(stepped)
       }
-      setSaved(false)
+      markChanged()
       setAiGenOpen(false)
     } catch (e) { setAiGenError(e.message) } finally { setAiGenLoading(false) }
   }
 
   if (!current) return <div className="p-8 text-center text-gray-400">加载中...</div>
 
-  const fitViewOptions = useMemo(() => ({ padding: 0.3 }), [])
   const nodeTypesMemo = useMemo(() => nodeTypes, [])
 
   // 泳道和表头节点：只依赖 actors/swimlaneHeight，不与 nodes 耦合，避免 ReactFlow 重测循环
@@ -666,22 +694,29 @@ ${aiOutputFormat || '客户节点放左边（x=100，绿色背景），我方节
 
         <div className="flex-1" onDragOver={onDragOver} onDrop={onDrop}>
           <ReactFlow
-            onInit={(instance) => { rfRef.current = instance }}
+            onInit={(instance) => {
+              rfRef.current = instance
+              // Imperative fitView on mount only — avoids React 19 re-trigger loop with boolean prop
+              if (!fitViewDone.current) {
+                fitViewDone.current = true
+                requestAnimationFrame(() => instance.fitView({ padding: 0.3 }))
+              }
+            }}
             nodes={allNodes}
             edges={edges}
             onNodesChange={handleNodesChange}
             onEdgesChange={handleEdgesChange}
             onNodeDragStart={() => { isDraggingRef.current = true }}
-            onNodeDragStop={() => { isDraggingRef.current = false; setHistoryTick((t) => t + 1) }}
+            onNodeDragStop={() => { isDraggingRef.current = false; userChangeRef.current = true; setHistoryTick((t) => t + 1) }}
             onConnect={onConnect}
             onReconnect={onReconnect}
             connectionMode="loose"
             nodeTypes={nodeTypesMemo}
-            fitView fitViewOptions={fitViewOptions}
             zoomOnScroll={false} panOnScroll={false}
             snapToGrid={true} snapGrid={[5, 5]}
             deleteKeyCode={['Backspace', 'Delete']}
             multiSelectionKeyCode="Shift"
+            proOptions={{ hideAttribution: true }}
           ><Controls /><Background /><MiniMap /></ReactFlow>
         </div>
 
