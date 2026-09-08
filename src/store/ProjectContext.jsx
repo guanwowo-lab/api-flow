@@ -17,6 +17,8 @@ const initialState = {
   folder: null,
   projectFolders: [],
   activeView: 'home',
+  workflowResult: null,
+  workflowSummary: null, // 新增：工作流质量摘要
 }
 
 function reducer(state, action) {
@@ -49,6 +51,10 @@ function reducer(state, action) {
       return { ...state, projectFolders: action.payload }
     case 'SET_VIEW':
       return { ...state, activeView: action.payload }
+    case 'SET_WORKFLOW_RESULT':
+      return { ...state, workflowResult: action.payload }
+    case 'SET_WORKFLOW_SUMMARY':
+      return { ...state, workflowSummary: action.payload }
     case 'RESET':
       return { ...initialState, projectList: state.projectList }
     default:

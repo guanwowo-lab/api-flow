@@ -9,6 +9,7 @@ import SequenceEditor from './components/FlowEditor/SequenceEditor'
 import ProjectFolderList from './components/ProjectManager/ProjectFolderList'
 import FolderChoice from './components/ProjectManager/FolderChoice'
 import Layout from './components/Layout/Layout'
+import WorkflowResultSummary from './components/AiWorkflow/WorkflowResultSummary'
 
 function BackToHome({ dispatch }) {
   return (
@@ -24,7 +25,7 @@ function BackToHome({ dispatch }) {
 }
 
 export default function App() {
-  const { state, dispatch } = useProject()
+  const { state, dispatch, saveExtract } = useProject()
 
   // Home page with 3 cards
   if (state.activeView === 'home') return <Home />
@@ -42,6 +43,28 @@ export default function App() {
   if (state.activeView === 'extract') return <>{backBtn}<div className="min-h-screen bg-gray-100"><ExtractionResult /></div></>
   if (state.activeView === 'match') return <>{backBtn}<div className="min-h-screen bg-gray-100"><MatchPanel /></div></>
   if (state.activeView === 'sequence') return <>{backBtn}<SequenceEditor /></>
+  if (state.activeView === 'workflowConfirm') return (
+    <>
+      {backBtn}
+      <div className="min-h-screen bg-gray-100">
+        <WorkflowResultSummary
+          steps={state.workflowResult?.steps || []}
+          summary={state.workflowResult?.summary || {}}
+          apis={state.workflowResult?.apis || []}
+          onConfirm={async () => {
+            // 确认后保存 API 并跳转到解析结果页面
+            const apis = state.workflowResult?.apis || []
+            await saveExtract(state.folder?.id, 'B', apis)
+            dispatch({ type: 'SET_VIEW', payload: 'extract' })
+          }}
+          onRetry={() => {
+            // 重新解析，返回上传页面
+            dispatch({ type: 'SET_VIEW', payload: 'upload' })
+          }}
+        />
+      </div>
+    </>
+  )
 
   return <Home />
 }

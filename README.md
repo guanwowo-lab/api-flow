@@ -1,16 +1,237 @@
-# React + Vite
+# API Flow - 智能 API 对接工作流平台
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 项目介绍
 
-Currently, two official plugins are available:
+这是我在做产品经理时自建的一个 API 对接辅助工具。基于我方自己的产品 API 文档和客户侧提供的 API 文档，智能读取客户侧 API 文档内容并提炼相关 API 信息，然后对照我方 API 信息，匹配哪些字段内容是已有的，哪些字段内容是我方缺失的，需要后续做补充的。
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+同时可以将字段对照关系下载下来，同后续系统对接业务泳道图一并给到客户和我方研发侧，辅助几方明确核对字段对应关系及取值关系，既能减少技术对接的细节交流，又能避免后续可能因对接阶段字段不匹配导致的分歧或纠纷。
 
-## React Compiler
+## 核心价值
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **提升对接效率**：通过 AI 自动解析客户文档，将原本数小时的人工阅读提取工作缩短到几分钟
+- **减少沟通成本**：生成清晰的字段映射关系文档，让客户、产品、研发三方对齐认知
+- **避免后期纠纷**：对接前明确字段对应关系和缺失项，避免上线后因字段不匹配产生分歧
+- **多方协同**：配合业务泳道图，形成完整的对接交付物，提升项目交付质量
 
-## Expanding the ESLint configuration
+## 核心功能
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. 智能文档解析
+- 支持上传 `.docx`、`.pdf` 文档，或直接粘贴文本
+- **AI 智能解析模式**：使用大模型理解文档语义，准确提取接口名称、URL、请求方法、参数结构
+- **规则引擎模式**：基于正则表达式和章节结构提取，适用于标准化文档
+
+### 2. 自方 API 库管理
+- 维护组织内部的 API 接口库
+- 按文件夹分类管理不同项目或模块的接口
+- 支持接口增删改查和批量导入
+
+### 3. 智能接口匹配
+- 自动将客户接口与自方接口进行匹配
+- 可视化展示匹配结果，支持手动调整
+- 生成接口对接映射表
+
+### 4. 接口测试
+- 内置 HTTP 客户端，支持 GET/POST/PUT/DELETE/PATCH 等请求
+- 参数自动填充和校验
+- 请求历史记录
+
+### 5. 时序图可视化
+- 基于 ReactFlow 生成接口调用时序图
+- 支持泳道图、节点编辑、导出图片
+
+## 技术栈
+
+### 前端
+- **React 19** - UI 框架
+- **Vite 8** - 构建工具
+- **Tailwind CSS 4** - 样式框架
+- **ReactFlow 11** - 流程图可视化
+- **mammoth** - Word 文档解析
+- **pdfjs-dist** - PDF 文档解析
+
+### 后端
+- **Express 5** - Node.js 服务器框架
+- **Supabase** - 数据存储（PostgreSQL）
+- **CORS** - 跨域支持
+
+### AI 能力
+- **DeepSeek API** - 大模型接口（支持自定义 Base URL 和 API Key）
+- **智能提示词工程** - 针对 API 文档解析场景优化的 Prompt
+
+## 环境依赖
+
+- **Node.js**: 18.x 或更高版本
+- **npm**: 9.x 或更高版本
+- **浏览器**: Chrome/Edge/Firefox 最新版本
+- **DeepSeek API Key**（可选，用于 AI 解析功能）
+
+## 安装与配置
+
+### 1. 克隆项目
+
+```bash
+git clone <repository-url>
+cd api-flow
+```
+
+### 2. 安装依赖
+
+```bash
+npm install
+```
+
+### 3. 配置环境变量
+
+创建 `.env` 文件（参考 `.env.example`）：
+
+```bash
+# Supabase 配置（用于数据存储）
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# 服务器端口（可选）
+PORT=3001
+```
+
+### 4. 配置 AI 解析（可选）
+
+首次运行时，点击页面上的"⚙ 设置"按钮，配置：
+
+- **Base URL**: `https://api.deepseek.com` （或其他兼容 OpenAI 格式的 API）
+- **API Key**: 你的 DeepSeek API Key
+- **Model**: `deepseek-v4-pro` （或其他模型）
+
+配置会保存在浏览器 LocalStorage 中。
+
+## 运行项目
+
+### 开发模式
+
+#### 只启动前端（端口 5190）
+
+```bash
+npm run dev
+```
+
+#### 同时启动前端和后端
+
+```bash
+npm run dev:all
+```
+
+前端运行在 `http://localhost:5190`，后端 API 运行在 `http://localhost:3001`。
+
+### 生产构建
+
+```bash
+npm run build
+npm run preview
+```
+
+## 使用流程
+
+1. **管理自方 API 库**
+   - 首页点击"我方 API 库"
+   - 创建项目和接口文件夹
+   - 添加组织内部的接口信息
+
+2. **创建对接项目**
+   - 首页点击"项目管理" → 新建项目
+   - 选择要对接的文件夹
+
+3. **上传客户文档**
+   - 上传 Word/PDF 文档，或粘贴文本
+   - 选择解析模式：
+     - **AI 智能工作流（推荐）**：3 步深度分析，识别接口清单 + 分批提取参数 + 验证增强
+     - **AI 智能解析**：单次 AI 调用快速提取
+     - **规则引擎**：基于正则表达式的传统解析
+   - 点击"开始解析"
+
+4. **查看解析结果**
+   - 查看提取出的接口列表
+   - 检查接口名称、URL、参数是否正确
+   - 可手动编辑和调整
+
+5. **接口匹配**
+   - 系统自动将客户接口与自方接口进行匹配
+   - 查看匹配结果，手动调整不匹配的项
+
+6. **接口测试**
+   - 在"API 测试"页面选择接口
+   - 填写请求参数
+   - 发起请求并查看响应
+
+7. **生成时序图**
+   - 在"时序编辑器"中可视化接口调用流程
+   - 导出为图片用于文档和汇报
+
+## 项目结构
+
+```
+api-flow/
+├── src/
+│   ├── components/          # React 组件
+│   │   ├── ApiLibrary/      # API 库管理
+│   │   ├── DocumentUploader/# 文档上传
+│   │   ├── ApiExtractor/    # 接口提取
+│   │   ├── ApiMatcher/      # 接口匹配
+│   │   ├── FlowEditor/      # 时序图编辑器
+│   │   └── ...
+│   ├── engines/             # 核心引擎
+│   │   ├── aiParser.js      # AI 解析引擎
+│   │   ├── apiExtractor.js  # 规则提取引擎
+│   │   └── docParser.js     # 文档解析器
+│   ├── store/               # 状态管理
+│   ├── pages/               # 页面组件
+│   └── main.jsx             # 应用入口
+├── server/                  # 后端服务
+│   ├── index.js             # Express 服务器
+│   ├── proxy.js             # API 代理
+│   └── sign-engine.js       # 签名引擎
+├── public/                  # 静态资源
+├── docs/                    # 文档
+└── package.json             # 项目配置
+```
+
+## Agent 能力体现
+
+本项目作为 Agent 应用，具备以下核心能力：
+
+### 1. 多步骤工作流（Workflow）
+- **3 步智能决策流程**：
+  - Step 1: 快速识别接口清单 - 通读全文，先定位所有接口的名称、URL 与 HTTP 方法
+  - Step 2: 分批提取参数详情 - 每批 3 个接口逐步深挖入参与出参，规避单次输出长度限制
+  - Step 3: 结果验证与质量增强 - 自动检查必填字段完整性，补全缺失数据，剔除不完整接口并生成质量评分报告
+- 每个步骤都有独立的状态管理和错误处理
+- 可视化展示工作流执行进度和决策轨迹
+
+### 2. 工具调用（Tool Calling）
+- 调用文档解析工具链：mammoth（docx）/pdfjs（PDF）→ 文本提取 → AI 结构化输出
+- 动态调用 HTTP 客户端进行接口测试
+- 集成 DeepSeek/OpenAI 兼容的 AI API
+
+### 3. 智能决策与推理
+- AI 根据文档内容推理 HTTP 方法（POST/GET/PUT/DELETE）
+- 自动推断参数类型（string/int/object/array/boolean）
+- 识别必填/可选参数标识
+- 评估识别置信度（high/medium/low）并记录发现的文档问题
+
+### 4. 质量保障与容错
+- 自动验证必填字段（name、url、method）
+- 为缺失字段补充合理默认值
+- 生成质量评分（0-100）和警告信息
+- JSON 解析失败时自动修复截断的 JSON
+- 网络请求失败时提供清晰的错误提示
+
+### 5. 上下文理解
+- 理解 API 文档的隐式结构（"服务地址"对应 URL，"入参"对应输入参数）
+- 支持用户自定义提示词，引导 AI 识别特殊格式
+- 处理超长文档时自动截取关键部分，避免 Token 限制
+
+## 许可证
+
+MIT License
+
+## 联系方式
+
+如有问题或建议，请通过 Issue 反馈。

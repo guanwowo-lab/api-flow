@@ -3,6 +3,8 @@ import { useProject } from '../../store/ProjectContext'
 import { parseDocument } from '../../engines/docParser'
 import { extractApis } from '../../engines/apiExtractor'
 import { aiParseDocument, getAiConfig, saveAiConfig, hasAiConfig } from '../../engines/aiParser'
+import { executeSimpleWorkflow } from '../../engines/simpleWorkflow'
+import SimpleWorkflowProgress from '../AiWorkflow/SimpleWorkflowProgress'
 
 export default function DocumentUploader() {
   const { state, dispatch, saveExtract, loadApiFolders } = useProject()
@@ -12,9 +14,12 @@ export default function DocumentUploader() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [mode, setMode] = useState('file')
-  const [useAI, setUseAI] = useState(hasAiConfig())
+  const [useAI, setUseAI] = useState(true) // 默认勾选 AI 智能解析
+  const [useWorkflow, setUseWorkflow] = useState(true) // 默认启用智能工作流
+  const [workflowSteps, setWorkflowSteps] = useState([])
   const [showSettings, setShowSettings] = useState(false)
-  const [aiConfig, setAiConfig] = useState(() => ({ ...getAiConfig(), hint: '' }))
+  // 保留已保存的 hint，避免解析时用空串把用户配置的提示词覆盖掉
+  const [aiConfig, setAiConfig] = useState(() => getAiConfig())
   const fileRef = useRef(null)
 
   useEffect(() => { loadApiFolders() }, [])
@@ -32,8 +37,20 @@ export default function DocumentUploader() {
   const handleParse = async () => {
     setError('')
     setLoading(true)
+    setWorkflowSteps([])
 
     try {
+      // 如果启用 AI 解析，先检查配置是否完整
+      if (useAI) {
+        const config = getAiConfig()
+        if (!config.baseUrl || !config.model || !config.apiKey) {
+          setError('请先配置 AI 模型（Base URL、Model 和 API Key）')
+          setShowSettings(true)
+          setLoading(false)
+          return
+        }
+      }
+
       let docText = ''
 
       if (mode === 'text' && text.trim()) {
@@ -48,10 +65,32 @@ export default function DocumentUploader() {
       if (!docText.trim()) { setError('未能提取到文本内容'); setLoading(false); return }
 
       let apisB = []
-      if (useAI) {
+
+      if (useAI && useWorkflow) {
+        // AI 智能工作流模式（3步）
+        saveAiConfig(aiConfig)
+        const result = await executeSimpleWorkflow(docText, (steps) => setWorkflowSteps(steps))
+        apisB = result.apis || []
+
+        // 保存工作流结果,切换到确认页面
+        dispatch({
+          type: 'SET_WORKFLOW_RESULT',
+          payload: {
+            steps: result.steps,
+            summary: result.summary,
+            apis: apisB
+          }
+        })
+
+        // 跳转到工作流结果确认页面,而不是直接到解析结果
+        dispatch({ type: 'SET_VIEW', payload: 'workflowConfirm' })
+        return // 不继续执行后续保存和跳转
+      } else if (useAI) {
+        // AI 单步解析模式
         saveAiConfig(aiConfig)
         apisB = await aiParseDocument(docText)
       } else {
+        // 规则引擎模式
         apisB = extractApis(docText)
       }
 
@@ -134,11 +173,39 @@ export default function DocumentUploader() {
       <div className="p-6 bg-white rounded-lg shadow border border-gray-200 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">客户 API 文档</h2>
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={useAI} onChange={(e) => setUseAI(e.target.checked)}
-              className="rounded" disabled={!hasAiConfig()} />
-            <span className={useAI ? 'text-purple-600 font-medium' : 'text-gray-400'}>🤖 AI 智能解析</span>
-          </label>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useAI}
+                onChange={(e) => {
+                  const checked = e.target.checked
+                  setUseAI(checked)
+                  if (!checked) setUseWorkflow(false) // 关闭 AI 时同时关闭工作流
+                  // 如果勾选但未配置，自动打开设置
+                  if (checked && !hasAiConfig()) {
+                    setShowSettings(true)
+                  }
+                }}
+                className="rounded"
+              />
+              <span className={useAI ? 'text-purple-600 font-medium' : 'text-gray-400'}>🤖 AI 智能解析</span>
+              {useAI && !hasAiConfig() && (
+                <span className="text-xs text-orange-600">（需配置）</span>
+              )}
+            </label>
+            {useAI && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useWorkflow}
+                  onChange={(e) => setUseWorkflow(e.target.checked)}
+                  className="rounded"
+                />
+                <span className={useWorkflow ? 'text-blue-600 font-medium' : 'text-gray-600'}>⚡ 智能工作流</span>
+              </label>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -183,7 +250,31 @@ export default function DocumentUploader() {
         )}
       </div>
 
-      {useAI && (
+      {useAI && useWorkflow && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">⚡</span>
+            <h3 className="font-semibold text-blue-700">AI 智能工作流（3步增强版）</h3>
+          </div>
+          <p className="text-blue-600 mb-2">
+            启用后将执行智能化的 3 步解析流程：
+          </p>
+          <ol className="list-decimal list-inside text-xs text-blue-600 space-y-1 ml-2">
+            <li>快速识别接口清单 - 通读全文，先定位所有接口的名称、路径与请求方法</li>
+            <li>分批提取参数详情 - 每批 3 个接口逐步深挖入参与出参，规避单次输出长度限制</li>
+            <li>质量验证与增强 - 自动检查必填字段，补全缺失数据，剔除不完整接口并生成质量报告</li>
+          </ol>
+        </div>
+      )}
+
+      {/* 工作流进度展示（解析中实时更新；失败后保留以便查看在哪一步出错） */}
+      {workflowSteps.length > 0 && (
+        <div className="mb-6">
+          <SimpleWorkflowProgress steps={workflowSteps} />
+        </div>
+      )}
+
+      {useAI && !useWorkflow && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4 text-xs">
           <div className="text-purple-700 mb-2">
             🤖 使用 <strong>AI 智能解析</strong>（{aiConfig.model}）

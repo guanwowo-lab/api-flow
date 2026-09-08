@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
-import { getAiConfig } from '../../engines/aiParser'
+import { getAiConfig } from '../../engines/aiConfig'
+import { callAi, extractJson } from '../../engines/aiClient'
 
 export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
@@ -151,12 +152,14 @@ export default function MatchPanel() {
     setAiMatchLoading(true)
     setAiMatchError('')
     try {
-      // 构建我方和客户接口信息
+      // 构建我方 API 信息（全量，所有接口共享）
       const ourApis = apisA.map((a, i) => ({
         idx: i, name: a.name, url: a.url, method: a.method,
         inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
         outputParams: flattenParams(a.outputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, desc: p.description })),
       }))
+
+      // 构建客户 API 信息
       const clientApis = apisB.map((a) => ({
         key: clientApiKey(a), name: a.name, url: a.url, method: a.method,
         inputParams: flattenParams(a.inputParams || []).map((p) => ({ key: p._key, name: p.name, type: p.type, required: p.required, desc: p.description })),
@@ -164,69 +167,171 @@ export default function MatchPanel() {
       }))
 
       const config = getAiConfig()
-      const prompt = `你是一个API参数匹配专家。请将客户API的参数映射到我方API的参数。
+      const total = clientApis.length
+      const concurrency = 3 // 并发数：同时处理 3 个接口
+      let completed = 0
+      const failures = [] // 记录匹配失败的接口，结束后汇总提示
+      const saveFailures = [] // 记录匹配成功但保存失败的接口
+
+      // 单个接口的匹配函数
+      const matchOneApi = async (clientApi, index) => {
+        const progress = `${index + 1}/${total}`
+
+        try {
+          const prompt = `你是一个API参数匹配专家。请将客户API的参数映射到我方API的参数。
 
 我方API（可用的接口和字段）：
 ${JSON.stringify(ourApis, null, 2)}
 
-客户API（需要匹配的接口和字段）：
-${JSON.stringify(clientApis, null, 2)}
+客户API（需要匹配的接口）：
+${JSON.stringify(clientApi, null, 2)}
 
-请为每个客户API的每个参数寻找最佳匹配。返回JSON数组（只返回JSON，不要解释）：
+请为该客户API的每个参数寻找最佳匹配。返回JSON数组（只返回JSON，不要解释）：
 [{
-  "clientKey": "客户API的key",
   "paramKey": "参数的key",
   "paramType": "input或output",
   "ourApiIdx": 我方API的idx（找不到填-1）,
   "ourParam": "我方字段名（用key的最后一段，如userInfo.address.city则填city）",
   "status": "matched或missing",
-  "remark": "匹配说明"
+  "remark": "简短说明（不超过5字）"
 }]
 
 匹配规则：
 1. 根据参数名称、类型、描述的语义相似度来匹配
 2. 能匹配到的status填"matched"，找不到的填"missing"
 3. ourApiIdx用我方API的idx值
-4. 为我方参数列表中确实存在的字段
-5. 完整覆盖每个客户参数，不要遗漏
+4. ourParam为我方参数列表中确实存在的字段
+5. 完整覆盖该接口的每个参数（输入+输出），不要遗漏
+6. remark必须极简（最多5个字），如："无对应"、"已匹配"、"类型不符"
 ${aiMatchHint ? `\n补充要求：\n${aiMatchHint}` : ''}`
 
-      const resp = await fetch(`${config.baseUrl}/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.apiKey}` },
-        body: JSON.stringify({ model: config.model, max_tokens: 16384, temperature: 0.1, messages: [{ role: 'user', content: prompt }] }),
-      })
-      if (!resp.ok) throw new Error(`AI请求失败 (${resp.status})`)
-      const data = await resp.json()
-      const reply = data?.choices?.[0]?.message?.content || ''
-      let jsonStr = reply
-      const codeBlock = reply.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (codeBlock) jsonStr = codeBlock[1]
-      const arrayMatch = jsonStr.match(/\[[\s\S]*\]/)
-      if (!arrayMatch) throw new Error('AI返回格式异常')
-      const suggestions = JSON.parse(arrayMatch[0])
+          // 限流时自动退避重试（最多 3 次尝试）
+          let reply = ''
+          let lastError = null
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const res = await callAi(prompt, { maxTokens: 16384, temperature: 0.1, config })
+              reply = res.reply
+              lastError = null
+              break
+            } catch (err) {
+              lastError = err
+              const isRateLimit = /429|限流/.test(err.message)
+              if (!isRateLimit || attempt === 2) break
+              // 退避等待：1s、2s
+              await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
+            }
+          }
 
-      // 填充映射 — 使用函数更新器合并到最新状态，避免覆盖并发编辑
-      let toSave
-      setMappings((prev) => {
-        const merged = { ...prev }
-        for (const s of suggestions) {
-          const ck = s.clientKey || `${s.clientIdx}` // 兼容 AI 返回旧格式
-          const validIdx = Number.isInteger(s.ourApiIdx) && s.ourApiIdx >= 0 && s.ourApiIdx < apisA.length ? s.ourApiIdx : -1
-          const ourA = validIdx >= 0 ? apisA[validIdx] : null
-          const list = (merged[ck] || []).filter((m) => !(m.clientParam === s.paramKey && m.paramType === s.paramType))
-          list.push({ clientParam: s.paramKey, paramType: s.paramType, ourApiIdx: validIdx, ourApiKey: ourA ? apiKey(ourA) : '', ourParam: s.ourParam || '', status: s.status || 'matched', remark: s.remark || '' })
-          merged[ck] = list
-        }
-        toSave = merged
-        return merged
-      })
-      if (toSave) {
-        for (const [ck, list] of Object.entries(toSave)) {
-          await saveMatches(state.folder?.id, ck, list)
+          if (lastError) {
+            console.error(`接口 ${progress} 请求失败:`, lastError.message)
+            return { clientApi, error: lastError.message }
+          }
+
+          const suggestions = extractJson(reply, { prefer: 'array' })
+
+          if (!Array.isArray(suggestions) || suggestions.length === 0) {
+            console.warn(`接口 ${progress} 返回数组为空`)
+            return { clientApi, error: 'AI 返回的匹配结果为空' }
+          }
+
+          return { clientApi, suggestions }
+        } catch (error) {
+          console.error(`接口 ${progress} 处理出错:`, error)
+          return { clientApi, error: error.message }
         }
       }
-      setAiMatchOpen(false)
+
+      // 并发控制：分批处理
+      for (let i = 0; i < clientApis.length; i += concurrency) {
+        const batch = clientApis.slice(i, Math.min(i + concurrency, clientApis.length))
+        const batchIndexes = batch.map((_, idx) => i + idx)
+
+        setAiMatchError(`正在匹配 ${completed + 1}-${Math.min(completed + batch.length, total)}/${total} 个接口...`)
+
+        // 并发执行当前批次
+        const results = await Promise.all(
+          batch.map((clientApi, idx) => matchOneApi(clientApi, batchIndexes[idx]))
+        )
+
+        // 处理结果
+        for (const result of results) {
+          if (!result || result.error) {
+            failures.push({
+              name: result?.clientApi?.name || '未知接口',
+              reason: result?.error || '未知错误'
+            })
+            completed++
+            continue
+          }
+
+          const { clientApi, suggestions } = result
+          const ck = clientApi.key
+
+          // 立即更新该接口的映射
+          setMappings((prev) => {
+            const merged = { ...prev }
+            const list = []
+            for (const s of suggestions) {
+              const validIdx = Number.isInteger(s.ourApiIdx) && s.ourApiIdx >= 0 && s.ourApiIdx < apisA.length ? s.ourApiIdx : -1
+              const ourA = validIdx >= 0 ? apisA[validIdx] : null
+              list.push({
+                clientParam: s.paramKey,
+                paramType: s.paramType,
+                ourApiIdx: validIdx,
+                ourApiKey: ourA ? apiKey(ourA) : '',
+                ourParam: s.ourParam || '',
+                status: s.status || 'matched',
+                remark: s.remark || ''
+              })
+            }
+            merged[ck] = list
+            return merged
+          })
+
+          // 立即保存到后端
+          try {
+            const list = suggestions.map(s => {
+              const validIdx = Number.isInteger(s.ourApiIdx) && s.ourApiIdx >= 0 && s.ourApiIdx < apisA.length ? s.ourApiIdx : -1
+              const ourA = validIdx >= 0 ? apisA[validIdx] : null
+              return {
+                clientParam: s.paramKey,
+                paramType: s.paramType,
+                ourApiIdx: validIdx,
+                ourApiKey: ourA ? apiKey(ourA) : '',
+                ourParam: s.ourParam || '',
+                status: s.status || 'matched',
+                remark: s.remark || ''
+              }
+            })
+            await saveMatches(state.folder?.id, ck, list)
+          } catch (saveError) {
+            console.error(`接口 ${clientApi.name} 保存失败:`, saveError)
+            saveFailures.push({ name: clientApi.name, reason: '保存失败: ' + saveError.message })
+          }
+
+          completed++
+        }
+      }
+
+      // 汇总失败情况，让用户有感知
+      if (failures.length > 0 || saveFailures.length > 0) {
+        const lines = []
+        if (failures.length > 0) {
+          lines.push(`⚠ ${failures.length}/${total} 个接口匹配失败，可重试：`)
+          failures.slice(0, 5).forEach((f) => lines.push(`· ${f.name}：${f.reason.slice(0, 60)}`))
+          if (failures.length > 5) lines.push(`· ...等共 ${failures.length} 个`)
+        }
+        if (saveFailures.length > 0) {
+          lines.push(`⚠ ${saveFailures.length} 个接口匹配成功但保存失败（刷新后可能丢失）：`)
+          saveFailures.slice(0, 3).forEach((f) => lines.push(`· ${f.name}`))
+        }
+        setAiMatchError(lines.join('\n'))
+        // 不关闭弹窗，让用户看到失败信息后决定是否重试
+      } else {
+        setAiMatchError('')
+        setAiMatchOpen(false)
+      }
     } catch (e) {
       setAiMatchError(e.message)
     } finally {
