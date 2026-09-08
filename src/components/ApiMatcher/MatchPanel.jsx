@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useProject } from '../../store/ProjectContext'
 import { getAiConfig } from '../../engines/aiConfig'
-import { callAi, extractJson } from '../../engines/aiClient'
+import { callAiJson } from '../../engines/aiClient'
 
 export default function MatchPanel() {
   const { state, saveMatches, loadApiFolders, dispatch } = useProject()
@@ -206,12 +206,11 @@ ${JSON.stringify(clientApi, null, 2)}
 ${aiMatchHint ? `\n补充要求：\n${aiMatchHint}` : ''}`
 
           // 限流时自动退避重试（最多 3 次尝试）
-          let reply = ''
+          let suggestions = null
           let lastError = null
           for (let attempt = 0; attempt < 3; attempt++) {
             try {
-              const res = await callAi(prompt, { maxTokens: 16384, temperature: 0.1, config })
-              reply = res.reply
+              suggestions = await callAiJson(prompt, { maxTokens: 16384, temperature: 0.1, config, prefer: 'array' })
               lastError = null
               break
             } catch (err) {
@@ -227,8 +226,6 @@ ${aiMatchHint ? `\n补充要求：\n${aiMatchHint}` : ''}`
             console.error(`接口 ${progress} 请求失败:`, lastError.message)
             return { clientApi, error: lastError.message }
           }
-
-          const suggestions = extractJson(reply, { prefer: 'array' })
 
           if (!Array.isArray(suggestions) || suggestions.length === 0) {
             console.warn(`接口 ${progress} 返回数组为空`)

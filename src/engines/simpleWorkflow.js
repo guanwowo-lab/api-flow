@@ -4,7 +4,7 @@
  * 不限制文档长度、接口数量、参数数量
  */
 
-import { callAi, extractJson } from './aiClient'
+import { callAiJson } from './aiClient'
 
 /**
  * 执行简化的 3 步工作流
@@ -125,8 +125,7 @@ ${docText}
 3. 不要提取参数信息
 4. 只返回JSON，不要解释`
 
-  const { reply } = await callAi(prompt, { maxTokens: 8000 })
-  const result = extractJson(reply, { prefer: 'object' })
+  const result = await callAiJson(prompt, { maxTokens: 8000, prefer: 'object' })
   return result.apis || []
 }
 
@@ -175,8 +174,7 @@ ${docText}
 3. description保持简短（不超过20字）
 4. 只返回JSON，不要解释`
 
-    const { reply } = await callAi(prompt, { maxTokens: 16000 })
-    const result = extractJson(reply, { prefer: 'object' })
+    const result = await callAiJson(prompt, { maxTokens: 16000, prefer: 'object' })
     if (result.apis && Array.isArray(result.apis)) {
       detailedApis.push(...result.apis)
     }

@@ -55,8 +55,10 @@
 - **CORS** - 跨域支持
 
 ### AI 能力
-- **DeepSeek API** - 大模型接口（支持自定义 Base URL 和 API Key）
+- **LangChain（@langchain/openai + @langchain/core）** - AI 调用编排框架，链式管道：提示词模板 → 模型 → 文本解析 → JSON 清洗修复 → JSON 解析
+- **DeepSeek API** - 大模型接口（支持自定义 Base URL 和 API Key，兼容 OpenAI 格式）
 - **智能提示词工程** - 针对 API 文档解析场景优化的 Prompt
+- **JSON 容错处理** - 自定义清洗步骤（RunnableLambda）处理围栏/注释/截断等真实模型输出问题
 
 ## 环境依赖
 
@@ -178,7 +180,9 @@ api-flow/
 │   │   ├── FlowEditor/      # 时序图编辑器
 │   │   └── ...
 │   ├── engines/             # 核心引擎
+│   │   ├── aiClient.js      # 统一 AI 客户端（LangChain 链式管道）
 │   │   ├── aiParser.js      # AI 解析引擎
+│   │   ├── simpleWorkflow.js# 3 步智能工作流
 │   │   ├── apiExtractor.js  # 规则提取引擎
 │   │   └── docParser.js     # 文档解析器
 │   ├── store/               # 状态管理
@@ -189,7 +193,12 @@ api-flow/
 │   ├── proxy.js             # API 代理
 │   └── sign-engine.js       # 签名引擎
 ├── public/                  # 静态资源
-├── docs/                    # 文档
+├── docs/
+│   └── 测试案例/            # 测试用客户 API 文档样例（3 个 .docx，可直接上传解析）
+├── scripts/                 # 回归与文档生成脚本
+│   ├── smoke-langchain.mjs  # aiClient 封装层冒烟测试
+│   ├── smoke-real-flow.mjs  # 真实端到端流程冒烟测试
+│   └── gen-test-case-docs.py# 生成 Word 版测试案例文档
 └── package.json             # 项目配置
 ```
 
@@ -227,6 +236,29 @@ api-flow/
 - 理解 API 文档的隐式结构（"服务地址"对应 URL，"入参"对应输入参数）
 - 支持用户自定义提示词，引导 AI 识别特殊格式
 - 处理超长文档时自动截取关键部分，避免 Token 限制
+
+## 测试
+
+### 测试案例
+
+提供 3 份测试用的客户 API 文档样例（1 个正常场景 + 2 个异常/失败场景），位于 `docs/测试案例/`：
+
+- `测试案例1-标准API文档解析（正常场景）.docx` —— 规范的标准 API 文档（3 个接口，含参数表格），验证正常解析
+- `测试案例2-格式不规范的文档（异常场景1）.docx` —— 口语化、格式混乱的对接说明，验证 AI 容错能力
+- `测试案例3-缺少关键字段的文档（异常场景2）.docx` —— 缺少 URL/请求方法等关键字段的草稿，验证异常处理
+
+每份文档就是一份完整的 API 文档，可在"上传客户文档"页通过 **文件模式直接上传 .docx**，或复制内容用 **粘贴模式** 解析。
+
+文档内容维护在 `scripts/gen-test-case-docs.py` 中，修改后运行 `python scripts/gen-test-case-docs.py` 重新生成。
+
+### 冒烟测试脚本
+
+```bash
+node scripts/smoke-langchain.mjs   # aiClient 封装层：脏输出清洗/截断修复/429 映射（5 项）
+node scripts/smoke-real-flow.mjs   # 真实端到端流程：3 步工作流/单次 AI 解析/匹配重试（7 项）
+```
+
+两个脚本都内置 mock 的 OpenAI 兼容服务，无需真实 API Key 即可运行。
 
 ## 许可证
 

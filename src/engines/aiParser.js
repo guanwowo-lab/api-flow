@@ -1,5 +1,5 @@
 import { getAiConfig } from './aiConfig'
-import { callAi, extractJson } from './aiClient'
+import { callAiJson } from './aiClient'
 
 // 配置读写已迁移至 aiConfig.js，这里转发导出以兼容现有引用
 export { getAiConfig, saveAiConfig, hasAiConfig } from './aiConfig'
@@ -74,8 +74,7 @@ ${config.hint ? `\n用户提示：${config.hint}\n` : ''}
 文档内容：
 ${content}`
 
-  const { reply } = await callAi(prompt, { maxTokens: 16384, temperature: 0.1, config })
-  const parsed = extractJson(reply)
+  const parsed = await callAiJson(prompt, { maxTokens: 16384, temperature: 0.1, config })
 
   return (Array.isArray(parsed) ? parsed : [parsed]).map(normalizeApi)
 }
